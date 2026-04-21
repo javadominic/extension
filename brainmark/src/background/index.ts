@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — Background Service Worker
-// ============================================================
 import { initializeApp } from 'firebase/app'
 import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
@@ -16,7 +13,6 @@ import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
 import type { BrainBookmark, ChromeMessage, ChromeResponse } from '../types'
 
-// ── Firebase (re-init in service worker context) ─────────────
 // import.meta.env is not available at SW runtime — values inlined at build time by Vite
 const firebaseConfig = {
   apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            ?? 'AIzaSyBGTkNDcYZoYgmkDAiMA2jJ0y7UtIcxVMg',
@@ -38,7 +34,6 @@ function getDb() {
   return _db
 }
 
-// ── Google Sign-In via chrome.identity ──────────────────────
 async function signInWithGoogle(): Promise<string | null> {
   return new Promise((resolve) => {
     chrome.identity.getAuthToken({ interactive: true }, async (token) => {
@@ -61,7 +56,6 @@ async function signInWithGoogle(): Promise<string | null> {
   })
 }
 
-// ── New bookmark created ─────────────────────────────────────
 chrome.bookmarks.onCreated.addListener(async (id, node) => {
   if (!node.url) return
   const settings = await getSettings()
@@ -93,7 +87,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   }
 })
 
-// ── Bookmark removed ─────────────────────────────────────────
 chrome.bookmarks.onRemoved.addListener(async (id) => {
   const settings = await getSettings()
   const uid = settings.firebaseUid ?? ''
@@ -108,12 +101,10 @@ chrome.bookmarks.onRemoved.addListener(async (id) => {
   }
 })
 
-// ── Install: create weekly health-check alarm ────────────────
 chrome.runtime.onInstalled.addListener(() => {
   chrome.alarms.create('healthCheck', { periodInMinutes: 10080 }) // 1 week
 })
 
-// ── Alarm: run health check ──────────────────────────────────
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== 'healthCheck') return
   const settings = await getSettings()
@@ -121,7 +112,6 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   await checkAllBookmarks(bookmarks, settings.firebaseUid)
 })
 
-// ── Message handler ──────────────────────────────────────────
 chrome.runtime.onMessage.addListener(
   (message: ChromeMessage, _sender, sendResponse: (r: ChromeResponse) => void) => {
     ;(async () => {

@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — Gemini API Wrapper
-// ============================================================
 import type { BrainBookmark } from '../types'
 
 const BASE_URL =

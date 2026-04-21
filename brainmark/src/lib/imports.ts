@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — Third-party Importers (Pocket / Notion / Readwise)
-// ============================================================
 import { autoTag } from './gemini'
 import { saveBookmark } from './bookmarks'
 import type { BrainBookmark } from '../types'
@@ -9,7 +6,6 @@ function makeId(): string {
   return `imported_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 }
 
-// ── Pocket ──────────────────────────────────────────────────
 
 interface PocketItem {
   item_id: string
@@ -60,7 +56,6 @@ export async function importFromPocket(
   return bookmarks
 }
 
-// ── Notion ──────────────────────────────────────────────────
 
 interface NotionPage {
   id: string
@@ -108,7 +103,6 @@ export async function importFromNotion(
   return bookmarks
 }
 
-// ── Readwise ────────────────────────────────────────────────
 
 interface ReadwiseHighlight {
   id: number

@@ -1,7 +1,4 @@
-// ============================================================
-// Contextos — Content Script (All Pages)
 // Injects a toast via Shadow DOM when visiting a saved bookmark
-// ============================================================
 import type { BrainBookmark } from '../types'
 
 const TOAST_AUTO_DISMISS_MS = 5000
@@ -172,7 +169,6 @@ function injectToast(bookmark: BrainBookmark) {
   timer = setTimeout(dismiss, TOAST_AUTO_DISMISS_MS)
 }
 
-// ── Main: check if current URL is a saved bookmark ──────────
 function urlsMatch(a: string, b: string): boolean {
   try {
     const ua = new URL(a)

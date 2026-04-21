@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — Link Health Checker
-// ============================================================
 import { doc, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import {

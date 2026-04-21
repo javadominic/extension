@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — AddNoteModal Component
-// ============================================================
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
 import TagBadge from './TagBadge'

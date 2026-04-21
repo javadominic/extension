@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — Toast Component (inline popup notification)
-// ============================================================
 import { useEffect, useState } from 'react'
 
 interface Props {

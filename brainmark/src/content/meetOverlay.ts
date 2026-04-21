@@ -1,7 +1,4 @@
-// ============================================================
-// Contextos — Meet/Zoom Overlay
 // Floating panel with relevant bookmarks for current meeting
-// ============================================================
 import type { BrainBookmark } from '../types'
 
 let panel: HTMLDivElement | null = null
@@ -216,7 +213,6 @@ function buildPanel(bookmarks: BrainBookmark[]) {
   document.addEventListener('mouseup', () => { isDragging = false })
 }
 
-// ── Init: fetch bookmarks and render panel ───────────────────
 function init() {
   if (document.getElementById('contextos-meet-panel-host')) return
 

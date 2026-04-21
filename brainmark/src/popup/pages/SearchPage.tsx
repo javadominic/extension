@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — SearchPage
-// ============================================================
 import { useState, useEffect, useCallback, useRef } from 'react'
 import SearchBar    from '../../components/SearchBar'
 import BookmarkCard from '../../components/BookmarkCard'

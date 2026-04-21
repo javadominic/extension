@@ -1,7 +1,4 @@
-// ============================================================
-// Contextos — ImportWizard Component
 // 3-step wizard for Pocket / Notion / Readwise import
-// ============================================================
 import { useState } from 'react'
 import { importFromPocket, importFromNotion, importFromReadwise } from '../lib/imports'
 import { getSettings } from '../lib/storage'

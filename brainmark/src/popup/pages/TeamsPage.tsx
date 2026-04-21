@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — TeamsPage
-// ============================================================
 import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'
 import { getSettings, saveSettings, getCachedBookmarks } from '../../lib/storage'

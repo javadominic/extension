@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — SettingsPage
-// ============================================================
 import { useState, useEffect } from 'react'
 import ImportWizard from '../../components/ImportWizard'
 import Toast        from '../../components/Toast'

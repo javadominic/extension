@@ -1,7 +1,3 @@
-// ============================================================
-// Contextos — Shared TypeScript Types
-// ============================================================
-
 export interface BrainBookmark {
   id: string
   url: string

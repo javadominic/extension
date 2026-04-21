@@ -10,8 +10,7 @@
     --popup-h: 560px;
   }
 
-  /* ── Dark theme (default) ── */
-  html[data-theme='dark'], html:not([data-theme]) {
+    html[data-theme='dark'], html:not([data-theme]) {
     --bg-base:        #0c0c0c;
     --bg-card:        #141414;
     --bg-border:      rgba(255,255,255,0.07);
@@ -21,8 +20,7 @@
     --scrollbar:      rgba(232,160,52,0.3);
   }
 
-  /* ── Light theme ── */
-  html[data-theme='light'] {
+    html[data-theme='light'] {
     --bg-base:        #fdfdfc;
     --bg-card:        #ffffff;
     --bg-border:      rgba(0,0,0,0.07);

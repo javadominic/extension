@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — HealthBadge Component
-// ============================================================
 interface Props {
   status: 'alive' | 'dead' | 'unchecked'
   lastChecked?: number

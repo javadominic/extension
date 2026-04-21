@@ -1,6 +1,3 @@
-// ============================================================
-// Contextos — App.tsx (Tab Router)
-// ============================================================
 import { useState, useEffect } from 'react'
 import SearchPage    from './pages/SearchPage'
 import BookmarksPage from './pages/BookmarksPage'
