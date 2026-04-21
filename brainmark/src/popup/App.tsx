@@ -53,7 +53,7 @@ export default function App() {
         <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center text-base">
           🧠
         </div>
-        <span className="font-bold text-slate-100 tracking-tight">Contextos</span>
+        <span className="font-display italic text-xl text-slate-100 tracking-tight">Contextos</span>
         <div className="ml-auto flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow" />
           <span className="text-xs text-slate-500">AI ready</span>

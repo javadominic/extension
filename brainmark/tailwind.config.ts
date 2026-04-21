@@ -9,25 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Instrument Serif', 'Georgia', 'serif'],
+        mono: ['DM Mono', 'monospace'],
       },
       colors: {
         primary: {
-          50:  '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50:  '#fefaf3',
+          100: '#fdf3e2',
+          200: '#fce3c0',
+          300: '#facd91',
+          400: '#f5b84a',
+          500: '#e8a034',
+          600: '#d98622',
+          700: '#b46519',
+          800: '#904e1b',
+          900: '#744118',
         },
         surface: {
-          DEFAULT: '#0f0f23',
-          card:    '#1a1a35',
-          border:  '#2a2a4a',
+          DEFAULT: '#0c0c0c',
+          card:    '#141414',
+          border:  'rgba(255, 255, 255, 0.07)',
         },
       },
       animation: {

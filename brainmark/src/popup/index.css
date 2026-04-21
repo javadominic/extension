@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
 @layer base {
   :root {
     --popup-w: 380px;
@@ -10,24 +12,24 @@
 
   /* ── Dark theme (default) ── */
   html[data-theme='dark'], html:not([data-theme]) {
-    --bg-base:        #0f0f23;
-    --bg-card:        #1a1a35;
-    --bg-border:      #2a2a4a;
-    --text-primary:   #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted:     #64748b;
-    --scrollbar:      rgba(99,102,241,0.3);
+    --bg-base:        #0c0c0c;
+    --bg-card:        #141414;
+    --bg-border:      rgba(255,255,255,0.07);
+    --text-primary:   #f0ede8;
+    --text-secondary: #7a7570;
+    --text-muted:     #3d3a38;
+    --scrollbar:      rgba(232,160,52,0.3);
   }
 
   /* ── Light theme ── */
   html[data-theme='light'] {
-    --bg-base:        #f1f5f9;
+    --bg-base:        #fdfdfc;
     --bg-card:        #ffffff;
-    --bg-border:      #e2e8f0;
-    --text-primary:   #0f172a;
-    --text-secondary: #475569;
-    --text-muted:     #94a3b8;
-    --scrollbar:      rgba(99,102,241,0.4);
+    --bg-border:      rgba(0,0,0,0.07);
+    --text-primary:   #111111;
+    --text-secondary: #555555;
+    --text-muted:     #888888;
+    --scrollbar:      rgba(232,160,52,0.4);
   }
 
   html, body, #root {
@@ -36,7 +38,7 @@
     overflow: hidden;
     background-color: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'DM Sans', system-ui, sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
     transition: background-color 0.2s ease, color 0.2s ease;
