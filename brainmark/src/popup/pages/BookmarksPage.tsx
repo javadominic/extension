@@ -84,6 +84,29 @@ export default function BookmarksPage() {
     setToast({ msg: 'Bookmark deleted.', type: 'success' })
   }
 
+  async function handleSaveCurrentPage() {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+    const activeTab = tabs[0]
+    if (!activeTab || !activeTab.url || !activeTab.title) return
+
+    chrome.bookmarks.create({ title: activeTab.title, url: activeTab.url }, async (node) => {
+      const settings = await getSettings()
+      const newBm: BrainBookmark = {
+        id: node.id,
+        url: node.url!,
+        title: node.title,
+        note: '',
+        tags: [],
+        addedAt: node.dateAdded ?? Date.now(),
+        health: 'unchecked',
+        source: 'chrome',
+        uid: settings.firebaseUid ?? ''
+      }
+      setBookmarks((prev) => [newBm, ...prev])
+      setEditing(newBm)
+    })
+  }
+
   return (
     <div className="flex flex-col h-full">
       {toast && (
@@ -94,17 +117,25 @@ export default function BookmarksPage() {
       <div className="px-3 pt-3 pb-2 border-b border-surface-border space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-slate-500 font-medium">{bookmarks.length} bookmarks</span>
-          <button
-            id="sync-btn"
-            onClick={handleSync}
-            disabled={syncing}
-            className="btn-ghost flex items-center gap-1.5 text-xs py-1 px-2.5"
-          >
-            {syncing ? (
-              <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
-            ) : '🔄'}
-            {syncing ? 'Syncing…' : 'Sync Chrome'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSaveCurrentPage}
+              className="bg-primary-500 hover:bg-primary-600 text-slate-900 flex items-center gap-1.5 text-[11px] font-bold py-1 px-2.5 rounded shadow-sm transition-colors"
+            >
+              ＋ Save Page
+            </button>
+            <button
+              id="sync-btn"
+              onClick={handleSync}
+              disabled={syncing}
+              className="btn-ghost flex items-center gap-1.5 text-xs py-1 px-2.5"
+            >
+              {syncing ? (
+                <span className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+              ) : '🔄'}
+              {syncing ? 'Syncing…' : 'Sync'}
+            </button>
+          </div>
         </div>
 
         {/* Health filter */}
