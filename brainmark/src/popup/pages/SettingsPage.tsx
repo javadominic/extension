@@ -6,7 +6,7 @@ import ImportWizard from '../../components/ImportWizard'
 import Toast        from '../../components/Toast'
 import { getSettings, saveSettings } from '../../lib/storage'
 import type { AppSettings, BrainBookmark } from '../../types'
-import { upsertBookmarkInCache } from '../../lib/storage'
+import { upsertBookmark } from '../../lib/storage'
 
 export default function SettingsPage() {
   const [settings,     setSettings]     = useState<AppSettings>({
@@ -53,7 +53,7 @@ export default function SettingsPage() {
 
   async function handleImportDone(bookmarks: BrainBookmark[]) {
     for (const bm of bookmarks) {
-      await upsertBookmarkInCache(bm)
+      await upsertBookmark(bm)
     }
     setToast({ msg: `Imported ${bookmarks.length} bookmarks!`, type: 'success' })
   }

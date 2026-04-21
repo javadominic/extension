@@ -3,7 +3,7 @@
 // ============================================================
 import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'
-import { getSettings, saveSettings, getBookmarksCache } from '../../lib/storage'
+import { getSettings, saveSettings, getCachedBookmarks } from '../../lib/storage'
 import {
   doc, setDoc, getDoc, collection, addDoc, serverTimestamp, updateDoc, arrayUnion,
 } from 'firebase/firestore'
@@ -23,7 +23,7 @@ export default function TeamsPage() {
     async function load() {
       const s = await getSettings()
       setSettings(s)
-      const bms = await getBookmarksCache()
+      const bms = await getCachedBookmarks()
       setBookmarks(bms)
       if (s.teamId && s.firebaseUid) {
         try {

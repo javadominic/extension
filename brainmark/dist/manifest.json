@@ -2,14 +2,22 @@
   "manifest_version": 3,
   "name": "BrainMark",
   "version": "1.0.0",
-  "description": "Smart bookmark memory assistant with AI",
+  "description": "Smart bookmark memory assistant with AI. Save why you bookmarked something and never forget again.",
+  "author": "Your Name",
+  "homepage_url": "https://github.com/yourusername/brainmark",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "action": {
     "default_popup": "src/popup/index.html",
     "default_icon": {
       "16": "public/icons/icon16.png",
       "48": "public/icons/icon48.png",
       "128": "public/icons/icon128.png"
-    }
+    },
+    "default_title": "BrainMark"
   },
   "background": {
     "service_worker": "service-worker-loader.js",
@@ -47,14 +55,7 @@
   "host_permissions": [
     "<all_urls>"
   ],
-  "oauth2": {
-    "client_id": "YOUR_GOOGLE_CLIENT_ID",
-    "scopes": [
-      "openid",
-      "email",
-      "profile"
-    ]
-  },
+  "minimum_chrome_version": "88",
   "web_accessible_resources": [
     {
       "matches": [

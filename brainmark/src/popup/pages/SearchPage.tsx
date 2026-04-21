@@ -6,7 +6,7 @@ import SearchBar    from '../../components/SearchBar'
 import BookmarkCard from '../../components/BookmarkCard'
 import AddNoteModal from '../../components/AddNoteModal'
 import Toast        from '../../components/Toast'
-import { getBookmarksCache, getSettings } from '../../lib/storage'
+import { getCachedBookmarks, getSettings } from '../../lib/storage'
 import { semanticSearch } from '../../lib/gemini'
 import { updateNote, deleteBookmark } from '../../lib/bookmarks'
 import type { BrainBookmark } from '../../types'
@@ -21,7 +21,7 @@ export default function SearchPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
-    getBookmarksCache().then(setAll)
+    getCachedBookmarks().then(setAll)
   }, [])
 
   const doSearch = useCallback(

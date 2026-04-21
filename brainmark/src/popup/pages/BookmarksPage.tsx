@@ -6,7 +6,7 @@ import BookmarkCard from '../../components/BookmarkCard'
 import AddNoteModal from '../../components/AddNoteModal'
 import TagBadge     from '../../components/TagBadge'
 import Toast        from '../../components/Toast'
-import { getBookmarksCache, getSettings } from '../../lib/storage'
+import { getCachedBookmarks, getSettings } from '../../lib/storage'
 import { syncChromeBookmarks, updateNote, deleteBookmark } from '../../lib/bookmarks'
 import type { BrainBookmark } from '../../types'
 
@@ -28,7 +28,7 @@ export default function BookmarksPage() {
   const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
-    getBookmarksCache().then(setBookmarks)
+    getCachedBookmarks().then(setBookmarks)
   }, [])
 
   // Collect all unique tags

@@ -7,10 +7,10 @@ import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth
 import { suggestNote, autoTag } from '../lib/gemini'
 import {
   getSettings,
-  getBookmarksCache,
-  upsertBookmarkInCache,
-  removeBookmarkFromCache,
-  setFirebaseToken,
+  getCachedBookmarks,
+  upsertBookmark,
+  removeBookmark,
+  saveFirebaseToken,
 } from '../lib/storage'
 import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
@@ -52,7 +52,7 @@ async function signInWithGoogle(): Promise<string | null> {
         const credential = GoogleAuthProvider.credential(null, token)
         const result = await signInWithCredential(auth, credential)
         const idToken = await result.user.getIdToken()
-        await setFirebaseToken(idToken)
+        await saveFirebaseToken(idToken)
         resolve(result.user.uid)
       } catch {
         resolve(null)
@@ -74,7 +74,7 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
     bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey)
   }
 
-  await upsertBookmarkInCache(bm)
+  await upsertBookmark(bm)
 
   if (uid) {
     try {
@@ -98,7 +98,7 @@ chrome.bookmarks.onRemoved.addListener(async (id) => {
   const settings = await getSettings()
   const uid = settings.firebaseUid ?? ''
 
-  await removeBookmarkFromCache(id)
+  await removeBookmark(id)
 
   if (uid) {
     try {
@@ -117,7 +117,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== 'healthCheck') return
   const settings = await getSettings()
-  const bookmarks = await getBookmarksCache()
+  const bookmarks = await getCachedBookmarks()
   await checkAllBookmarks(bookmarks, settings.firebaseUid)
 })
 
@@ -128,7 +128,7 @@ chrome.runtime.onMessage.addListener(
       try {
         switch (message.type) {
           case 'GET_BOOKMARKS': {
-            const data = await getBookmarksCache()
+            const data = await getCachedBookmarks()
             sendResponse({ success: true, data })
             break
           }
@@ -139,11 +139,11 @@ chrome.runtime.onMessage.addListener(
               note: string
               uid: string
             }
-            const cache = await getBookmarksCache()
-            const bm = cache.find((b) => b.id === id)
+            const cache = await getCachedBookmarks()
+            const bm = cache.find((b: BrainBookmark) => b.id === id)
             if (bm) {
               bm.note = note
-              await upsertBookmarkInCache(bm)
+              await upsertBookmark(bm)
               if (uid) {
                 try {
                   const db = getDb()
