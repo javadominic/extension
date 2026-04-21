@@ -6,8 +6,8 @@ import { db } from './firebase'
 import {
   getHealthStatus,
   setHealthStatus,
-  getBookmarksCache,
-  setBookmarksCache,
+  getCachedBookmarks,
+  setCachedBookmarks,
 } from './storage'
 import type { BrainBookmark } from '../types'
 
@@ -30,7 +30,7 @@ export async function checkAllBookmarks(
   uid?: string
 ): Promise<void> {
   const healthMap = await getHealthStatus()
-  const cache = await getBookmarksCache()
+  const cache = await getCachedBookmarks()
   const now = Date.now()
 
   for (let i = 0; i < bookmarks.length; i += BATCH_SIZE) {
@@ -64,5 +64,5 @@ export async function checkAllBookmarks(
     await setHealthStatus(healthMap)
   }
 
-  await setBookmarksCache(cache)
+  await setCachedBookmarks(cache)
 }

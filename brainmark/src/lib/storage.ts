@@ -1,115 +1,83 @@
-// ============================================================
-// BrainMark — chrome.storage Helpers
-// ============================================================
 import type { BrainBookmark, AppSettings } from '../types'
 
-// ── SYNC (small, cross-device) ──────────────────────────────
+// ─────────────────────────────────────────────
+// chrome.storage.SYNC  →  small stuff, all devices
+// Think: settings, preferences, team ID
+// Max: 8KB per key, 100KB total
+// ─────────────────────────────────────────────
 
 export async function getSettings(): Promise<AppSettings> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get('settings', (result) => {
-      resolve(
-        (result.settings as AppSettings) ?? {
-          geminiApiKey: '',
-          toastEnabled: true,
-          theme: 'system',
-        }
-      )
-    })
-  })
+  const result = await chrome.storage.sync.get('settings')
+  return result.settings ?? {
+    geminiApiKey: '',
+    toastEnabled: true,
+    theme: 'system',
+  }
 }
 
-export async function saveSettings(settings: AppSettings): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set({ settings }, resolve)
-  })
+export async function saveSettings(patch: Partial<AppSettings>) {
+  const current = await getSettings()
+  await chrome.storage.sync.set({ settings: { ...current, ...patch } })
 }
 
-export async function getHealthStatus(): Promise<
-  Record<string, 'alive' | 'dead' | 'unchecked'>
-> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get('health_status', (result) => {
-      resolve((result.health_status as Record<string, 'alive' | 'dead' | 'unchecked'>) ?? {})
-    })
-  })
+export async function getHealthStatus(): Promise<Record<string, 'alive' | 'dead' | 'unchecked'>> {
+  const result = await chrome.storage.sync.get('health_status')
+  return result.health_status ?? {}
 }
 
 export async function setHealthStatus(
   status: Record<string, 'alive' | 'dead' | 'unchecked'>
 ): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set({ health_status: status }, resolve)
-  })
+  await chrome.storage.sync.set({ health_status: status })
 }
 
-export async function getLastSync(): Promise<number> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get('last_sync', (result) => {
-      resolve((result.last_sync as number) ?? 0)
-    })
-  })
+// ─────────────────────────────────────────────
+// chrome.storage.LOCAL  →  big stuff, this device only
+// Think: bookmark list, AI embeddings, import history
+// Max: 10MB total — plenty of room
+// ─────────────────────────────────────────────
+
+// Read ALL cached bookmarks
+export async function getCachedBookmarks(): Promise<BrainBookmark[]> {
+  const result = await chrome.storage.local.get('bookmarks_cache')
+  return result.bookmarks_cache ?? []   // returns empty array if nothing saved yet
 }
 
-export async function setLastSync(ts: number): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.set({ last_sync: ts }, resolve)
-  })
+// Save the full bookmark list
+export async function setCachedBookmarks(bookmarks: BrainBookmark[]) {
+  await chrome.storage.local.set({ bookmarks_cache: bookmarks })
 }
 
-// ── LOCAL (large, this device only) ────────────────────────
-
-export async function getBookmarksCache(): Promise<BrainBookmark[]> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get('bookmarks_cache', (result) => {
-      resolve((result.bookmarks_cache as BrainBookmark[]) ?? [])
-    })
-  })
+// Add one bookmark (or update if it already exists)
+export async function upsertBookmark(bookmark: BrainBookmark) {
+  const all = await getCachedBookmarks()
+  const idx = all.findIndex(b => b.id === bookmark.id)
+  if (idx >= 0) {
+    all[idx] = bookmark          // update existing
+  } else {
+    all.unshift(bookmark)        // add new at top
+  }
+  await setCachedBookmarks(all)
 }
 
-export async function setBookmarksCache(bookmarks: BrainBookmark[]): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ bookmarks_cache: bookmarks }, resolve)
-  })
+// Delete one bookmark by ID
+export async function removeBookmark(bookmarkId: string) {
+  const all = await getCachedBookmarks()
+  await setCachedBookmarks(all.filter(b => b.id !== bookmarkId))
 }
 
-export async function upsertBookmarkInCache(bookmark: BrainBookmark): Promise<void> {
-  const cache = await getBookmarksCache()
-  const idx = cache.findIndex((b) => b.id === bookmark.id)
-  if (idx >= 0) cache[idx] = bookmark
-  else cache.unshift(bookmark)
-  await setBookmarksCache(cache)
+// Find a bookmark by its URL (used by content script for toast)
+export async function findBookmarkByUrl(url: string): Promise<BrainBookmark | null> {
+  const all = await getCachedBookmarks()
+  return all.find(b => b.url === url) ?? null
 }
 
-export async function removeBookmarkFromCache(id: string): Promise<void> {
-  const cache = await getBookmarksCache()
-  await setBookmarksCache(cache.filter((b) => b.id !== id))
-}
-
-export async function getPendingNotes(): Promise<BrainBookmark[]> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get('pending_notes', (result) => {
-      resolve((result.pending_notes as BrainBookmark[]) ?? [])
-    })
-  })
-}
-
-export async function setPendingNotes(notes: BrainBookmark[]): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ pending_notes: notes }, resolve)
-  })
+// Save Firebase auth token (so background worker can make API calls)
+export async function saveFirebaseToken(token: string) {
+  await chrome.storage.local.set({ firebase_token: token })
 }
 
 export async function getFirebaseToken(): Promise<string | null> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get('firebase_token', (result) => {
-      resolve((result.firebase_token as string) ?? null)
-    })
-  })
-}
-
-export async function setFirebaseToken(token: string): Promise<void> {
-  return new Promise((resolve) => {
-    chrome.storage.local.set({ firebase_token: token }, resolve)
-  })
+  const result = await chrome.storage.local.get('firebase_token')
+  return result.firebase_token ?? null
 }

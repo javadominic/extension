@@ -11,10 +11,10 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import {
-  getBookmarksCache,
-  setBookmarksCache,
-  upsertBookmarkInCache,
-  removeBookmarkFromCache,
+  getCachedBookmarks,
+  setCachedBookmarks,
+  upsertBookmark,
+  removeBookmark,
   getSettings,
 } from './storage'
 import { suggestNote, autoTag } from './gemini'
@@ -75,7 +75,7 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
     })
   )
 
-  await setBookmarksCache(bookmarks)
+  await setCachedBookmarks(bookmarks)
 
   // Persist to Firestore if user is signed in
   if (uid) {
@@ -90,7 +90,7 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
 
 /** Save / update a single bookmark in cache + Firestore. */
 export async function saveBookmark(bm: BrainBookmark): Promise<void> {
-  await upsertBookmarkInCache(bm)
+  await upsertBookmark(bm)
   if (bm.uid) {
     const ref = doc(db, 'bookmarks', bm.uid, 'items', bm.id)
     await setDoc(ref, bm, { merge: true })
@@ -103,11 +103,11 @@ export async function updateNote(
   note: string,
   uid: string
 ): Promise<void> {
-  const cache = await getBookmarksCache()
+  const cache = await getCachedBookmarks()
   const bm = cache.find((b) => b.id === id)
   if (!bm) return
   bm.note = note
-  await upsertBookmarkInCache(bm)
+  await upsertBookmark(bm)
   if (uid) {
     const ref = doc(db, 'bookmarks', uid, 'items', id)
     await updateDoc(ref, { note })
@@ -116,7 +116,7 @@ export async function updateNote(
 
 /** Delete a bookmark from cache + Firestore. */
 export async function deleteBookmark(id: string, uid: string): Promise<void> {
-  await removeBookmarkFromCache(id)
+  await removeBookmark(id)
   if (uid) {
     const ref = doc(db, 'bookmarks', uid, 'items', id)
     await deleteDoc(ref)
