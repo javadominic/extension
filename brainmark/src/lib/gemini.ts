@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Gemini API Wrapper
+// Contextos — Gemini API Wrapper
 // ============================================================
 import type { BrainBookmark } from '../types'
 

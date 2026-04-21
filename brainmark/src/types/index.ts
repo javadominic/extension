@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Shared TypeScript Types
+// Contextos — Shared TypeScript Types
 // ============================================================
 
 export interface BrainBookmark {

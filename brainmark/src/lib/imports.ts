@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Third-party Importers (Pocket / Notion / Readwise)
+// Contextos — Third-party Importers (Pocket / Notion / Readwise)
 // ============================================================
 import { autoTag } from './gemini'
 import { saveBookmark } from './bookmarks'

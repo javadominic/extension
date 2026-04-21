@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Firebase Initialization
+// Contextos — Firebase Initialization
 // ============================================================
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'

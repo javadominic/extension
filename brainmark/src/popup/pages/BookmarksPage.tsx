@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — BookmarksPage
+// Contextos — BookmarksPage
 // ============================================================
 import { useState, useEffect, useMemo } from 'react'
 import BookmarkCard from '../../components/BookmarkCard'

@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — ImportWizard Component
+// Contextos — ImportWizard Component
 // 3-step wizard for Pocket / Notion / Readwise import
 // ============================================================
 import { useState } from 'react'

@@ -1,8 +1,8 @@
-# 🧠 BrainMark — Smart Bookmark Memory Assistant
+# 🧠 Contextos — Smart Bookmark Memory Assistant
 
 > A Chrome/Opera extension that uses Gemini AI to help you remember **why** you saved every bookmark.
 
-![BrainMark](public/icons/icon128.png)
+![Contextos](public/icons/icon128.png)
 
 ---
 
@@ -39,7 +39,7 @@
 ### 1. Install dependencies
 
 ```bash
-cd brainmark
+cd contextos
 npm install
 ```
 
@@ -99,7 +99,7 @@ npm run build
 ## 📁 Project Structure
 
 ```
-brainmark/
+contextos/
 ├── public/icons/          # Extension icons (16, 48, 128px)
 ├── src/
 │   ├── popup/             # React popup UI (380×560px)

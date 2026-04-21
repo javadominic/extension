@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Background Service Worker
+// Contextos — Background Service Worker
 // ============================================================
 import { initializeApp } from 'firebase/app'
 import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore'
@@ -171,6 +171,13 @@ chrome.runtime.onMessage.addListener(
           case 'SIGN_IN': {
             const uid = await signInWithGoogle()
             sendResponse({ success: !!uid, data: uid })
+            break
+          }
+
+          case 'OPEN_POPUP': {
+            // Opens the extension popup programmatically (MV3 workaround)
+            await chrome.action.openPopup().catch(() => {})
+            sendResponse({ success: true })
             break
           }
 

@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — HealthBadge Component
+// Contextos — HealthBadge Component
 // ============================================================
 interface Props {
   status: 'alive' | 'dead' | 'unchecked'

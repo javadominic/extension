@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — BookmarkCard Component
+// Contextos — BookmarkCard Component
 // ============================================================
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'

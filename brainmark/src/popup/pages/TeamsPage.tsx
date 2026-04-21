@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — TeamsPage
+// Contextos — TeamsPage
 // ============================================================
 import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'

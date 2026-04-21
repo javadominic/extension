@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — TagBadge Component
+// Contextos — TagBadge Component
 // ============================================================
 interface Props {
   tag: string

@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — SettingsPage
+// Contextos — SettingsPage
 // ============================================================
 import { useState, useEffect } from 'react'
 import ImportWizard from '../../components/ImportWizard'
@@ -23,10 +23,24 @@ export default function SettingsPage() {
     getSettings().then(setSettings)
   }, [])
 
+  function applyTheme(theme: string) {
+    const root = document.documentElement
+    if (theme === 'light') {
+      root.setAttribute('data-theme', 'light')
+    } else if (theme === 'dark') {
+      root.setAttribute('data-theme', 'dark')
+    } else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
+    }
+  }
+
   async function save(patch: Partial<AppSettings>) {
     const updated = { ...settings, ...patch }
     setSettings(updated)
     await saveSettings(updated)
+    // Apply theme immediately if it changed
+    if (patch.theme) applyTheme(patch.theme)
   }
 
   async function handleGoogleSignIn() {
@@ -212,7 +226,7 @@ export default function SettingsPage() {
 
       {/* Version */}
       <p className="text-center text-[10px] text-slate-700 pb-1">
-        BrainMark v1.0.0 · Built with Gemini AI
+        Contextos v1.0.0 · Made with ❤️ for people
       </p>
 
       {showImport && (

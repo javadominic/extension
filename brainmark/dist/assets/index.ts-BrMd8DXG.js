@@ -1,4 +1,4 @@
-(function(){function m(t){var r,i,d,c,l;(r=document.querySelector("#brainmark-toast-host"))==null||r.remove();const e=document.createElement("div");e.id="brainmark-toast-host",document.body.appendChild(e);const a=e.attachShadow({mode:"open"}),n=document.createElement("style");n.textContent=`
+(function(){function m(t){var i,d,c,l;(i=document.querySelector("#contextos-toast-host"))==null||i.remove();const e=document.createElement("div");e.id="contextos-toast-host",document.body.appendChild(e);const o=e.attachShadow({mode:"open"}),n=document.createElement("style");n.textContent=`
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
     .toast {
       position: fixed;
@@ -102,20 +102,20 @@
       color: #94a3b8;
     }
     .btn-ghost:hover { background: rgba(255,255,255,0.1); }
-  `;const o=document.createElement("div");o.className="toast";const p=(()=>{try{return new URL(t.url).hostname}catch{return""}})();o.innerHTML=`
+  `;const a=document.createElement("div");a.className="toast";const p=(()=>{try{return new URL(t.url).hostname}catch{return""}})();a.innerHTML=`
     <div class="header">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${p}&sz=32" alt="" onerror="this.style.display='none'"/>
-      <span class="brand">🧠 BrainMark</span>
+      <span class="brand">🧠 Contextos</span>
       <button class="close-btn" id="bm-close">×</button>
     </div>
     <div class="note">
       <strong>You saved this because:</strong><br/>
-      ${t.note||"No note saved yet."}
+      ${t.note||'<em style="color:#64748b">No note yet — click Edit to add one.</em>'}
     </div>
-    ${t.tags.length?`<div class="tags">${t.tags.map(g=>`<span class="tag">#${g}</span>`).join("")}</div>`:""}
+    ${t.tags.length?`<div class="tags">${t.tags.map(b=>`<span class="tag">#${b}</span>`).join("")}</div>`:""}
     <div class="actions">
       <button class="btn btn-primary" id="bm-edit">Edit note</button>
       <button class="btn btn-ghost" id="bm-dismiss">Dismiss</button>
     </div>
-  `,a.appendChild(n),a.appendChild(o);function s(){o.classList.add("dismiss"),setTimeout(()=>e.remove(),350)}(i=a.getElementById("bm-close"))==null||i.addEventListener("click",s),(d=a.getElementById("bm-dismiss"))==null||d.addEventListener("click",s),(c=a.getElementById("bm-edit"))==null||c.addEventListener("click",()=>{chrome.runtime.sendMessage({type:"OPEN_POPUP"}),s()});const b=setTimeout(s,5e3);(l=a.getElementById("bm-close"))==null||l.addEventListener("click",()=>clearTimeout(b))}function f(){const t=location.href;chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},e=>{if(!(e!=null&&e.success)||!Array.isArray(e.data))return;const n=e.data.find(o=>{try{return new URL(o.url).href===new URL(t).href}catch{return!1}});n&&n.note&&m(n)})}chrome.runtime.onMessage.addListener(t=>{t.type==="SHOW_TOAST"&&t.payload&&m(t.payload)});f();
+  `,o.appendChild(n),o.appendChild(a);let r;function s(){clearTimeout(r),a.classList.add("dismiss"),setTimeout(()=>e.remove(),350)}(d=o.getElementById("bm-close"))==null||d.addEventListener("click",s),(c=o.getElementById("bm-dismiss"))==null||c.addEventListener("click",s),(l=o.getElementById("bm-edit"))==null||l.addEventListener("click",()=>{chrome.runtime.sendMessage({type:"OPEN_POPUP"}).catch(()=>{}),s()}),r=setTimeout(s,5e3)}function g(t,e){try{const o=new URL(t),n=new URL(e);return o.hostname===n.hostname&&o.pathname.replace(/\/$/,"")===n.pathname.replace(/\/$/,"")}catch{return!1}}function f(){const t=location.href;chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},e=>{if(chrome.runtime.lastError||!(e!=null&&e.success)||!Array.isArray(e.data))return;const n=e.data.find(a=>g(a.url,t));n&&m(n)})}chrome.runtime.onMessage.addListener(t=>{t.type==="SHOW_TOAST"&&t.payload&&m(t.payload)});f();
 })()

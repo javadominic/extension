@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — SearchBar Component
+// Contextos — SearchBar Component
 // ============================================================
 import { useRef } from 'react'
 

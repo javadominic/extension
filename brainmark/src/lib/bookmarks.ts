@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Bookmark CRUD (Chrome + Firestore)
+// Contextos — Bookmark CRUD (Chrome + Firestore)
 // ============================================================
 import {
   collection,

@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Toast Component (inline popup notification)
+// Contextos — Toast Component (inline popup notification)
 // ============================================================
 import { useEffect, useState } from 'react'
 

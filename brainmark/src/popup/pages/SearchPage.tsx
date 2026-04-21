@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — SearchPage
+// Contextos — SearchPage
 // ============================================================
 import { useState, useEffect, useCallback, useRef } from 'react'
 import SearchBar    from '../../components/SearchBar'

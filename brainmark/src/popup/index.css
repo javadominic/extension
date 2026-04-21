@@ -8,26 +8,49 @@
     --popup-h: 560px;
   }
 
+  /* ── Dark theme (default) ── */
+  html[data-theme='dark'], html:not([data-theme]) {
+    --bg-base:        #0f0f23;
+    --bg-card:        #1a1a35;
+    --bg-border:      #2a2a4a;
+    --text-primary:   #e2e8f0;
+    --text-secondary: #94a3b8;
+    --text-muted:     #64748b;
+    --scrollbar:      rgba(99,102,241,0.3);
+  }
+
+  /* ── Light theme ── */
+  html[data-theme='light'] {
+    --bg-base:        #f1f5f9;
+    --bg-card:        #ffffff;
+    --bg-border:      #e2e8f0;
+    --text-primary:   #0f172a;
+    --text-secondary: #475569;
+    --text-muted:     #94a3b8;
+    --scrollbar:      rgba(99,102,241,0.4);
+  }
+
   html, body, #root {
     width: var(--popup-w);
     height: var(--popup-h);
     overflow: hidden;
-    background-color: #0f0f23;
-    color: #e2e8f0;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     font-family: 'Inter', system-ui, sans-serif;
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+    scrollbar-color: var(--scrollbar) transparent;
   }
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: rgba(99, 102, 241, 0.3);
+    background: var(--scrollbar);
     border-radius: 99px;
   }
 }

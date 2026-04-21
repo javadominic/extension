@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — AddNoteModal Component
+// Contextos — AddNoteModal Component
 // ============================================================
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'

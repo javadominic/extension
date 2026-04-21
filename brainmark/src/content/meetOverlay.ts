@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Meet/Zoom Overlay
+// Contextos — Meet/Zoom Overlay
 // Floating panel with relevant bookmarks for current meeting
 // ============================================================
 import type { BrainBookmark } from '../types'
@@ -123,7 +123,7 @@ const PANEL_STYLE = `
 
 function buildPanel(bookmarks: BrainBookmark[]) {
   const host = document.createElement('div')
-  host.id = 'brainmark-meet-panel-host'
+  host.id = 'contextos-meet-panel-host'
   document.body.appendChild(host)
   shadow = host.attachShadow({ mode: 'open' })
 
@@ -137,7 +137,7 @@ function buildPanel(bookmarks: BrainBookmark[]) {
 
   panel.innerHTML = `
     <div class="panel-header" id="bm-drag-handle">
-      <span class="panel-title">🧠 BrainMark</span>
+      <span class="panel-title">🧠 Contextos</span>
       <button class="icon-btn" id="bm-minimize" title="Minimize">—</button>
       <button class="icon-btn" id="bm-close-panel" title="Close">×</button>
     </div>
@@ -218,7 +218,7 @@ function buildPanel(bookmarks: BrainBookmark[]) {
 
 // ── Init: fetch bookmarks and render panel ───────────────────
 function init() {
-  if (document.getElementById('brainmark-meet-panel-host')) return
+  if (document.getElementById('contextos-meet-panel-host')) return
 
   chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS' }, (response) => {
     if (!response?.success || !Array.isArray(response.data)) {

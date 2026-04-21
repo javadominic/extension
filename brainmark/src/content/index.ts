@@ -1,5 +1,5 @@
 // ============================================================
-// BrainMark — Content Script (All Pages)
+// Contextos — Content Script (All Pages)
 // Injects a toast via Shadow DOM when visiting a saved bookmark
 // ============================================================
 import type { BrainBookmark } from '../types'
@@ -8,10 +8,10 @@ const TOAST_AUTO_DISMISS_MS = 5000
 
 function injectToast(bookmark: BrainBookmark) {
   // Remove any existing toast
-  document.querySelector('#brainmark-toast-host')?.remove()
+  document.querySelector('#contextos-toast-host')?.remove()
 
   const host = document.createElement('div')
-  host.id = 'brainmark-toast-host'
+  host.id = 'contextos-toast-host'
   document.body.appendChild(host)
 
   const shadow = host.attachShadow({ mode: 'open' })
@@ -133,12 +133,12 @@ function injectToast(bookmark: BrainBookmark) {
   toast.innerHTML = `
     <div class="header">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" alt="" onerror="this.style.display='none'"/>
-      <span class="brand">🧠 BrainMark</span>
+      <span class="brand">🧠 Contextos</span>
       <button class="close-btn" id="bm-close">×</button>
     </div>
     <div class="note">
       <strong>You saved this because:</strong><br/>
-      ${bookmark.note || 'No note saved yet.'}
+      ${bookmark.note || '<em style="color:#64748b">No note yet — click Edit to add one.</em>'}
     </div>
     ${bookmark.tags.length
       ? `<div class="tags">${bookmark.tags.map((t) => `<span class="tag">#${t}</span>`).join('')}</div>`
@@ -153,7 +153,10 @@ function injectToast(bookmark: BrainBookmark) {
   shadow.appendChild(style)
   shadow.appendChild(toast)
 
+  let timer: ReturnType<typeof setTimeout>
+
   function dismiss() {
+    clearTimeout(timer)
     toast.classList.add('dismiss')
     setTimeout(() => host.remove(), 350)
   }
@@ -161,29 +164,37 @@ function injectToast(bookmark: BrainBookmark) {
   shadow.getElementById('bm-close')?.addEventListener('click', dismiss)
   shadow.getElementById('bm-dismiss')?.addEventListener('click', dismiss)
   shadow.getElementById('bm-edit')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'OPEN_POPUP' })
+    // Open extension popup via clicking the browser action
+    chrome.runtime.sendMessage({ type: 'OPEN_POPUP' }).catch(() => {})
     dismiss()
   })
 
-  const timer = setTimeout(dismiss, TOAST_AUTO_DISMISS_MS)
-  shadow.getElementById('bm-close')?.addEventListener('click', () => clearTimeout(timer))
+  timer = setTimeout(dismiss, TOAST_AUTO_DISMISS_MS)
 }
 
 // ── Main: check if current URL is a saved bookmark ──────────
+function urlsMatch(a: string, b: string): boolean {
+  try {
+    const ua = new URL(a)
+    const ub = new URL(b)
+    // Match on hostname + pathname only (ignore hash, query params)
+    return ua.hostname === ub.hostname &&
+      ua.pathname.replace(/\/$/, '') === ub.pathname.replace(/\/$/, '')
+  } catch {
+    return false
+  }
+}
+
 function init() {
   const currentUrl = location.href
 
   chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS' }, (response) => {
+    if (chrome.runtime.lastError) return // Extension context invalidated
     if (!response?.success || !Array.isArray(response.data)) return
     const bookmarks = response.data as BrainBookmark[]
-    const match = bookmarks.find((b) => {
-      try {
-        return new URL(b.url).href === new URL(currentUrl).href
-      } catch {
-        return false
-      }
-    })
-    if (match && match.note) injectToast(match)
+    const match = bookmarks.find((b) => urlsMatch(b.url, currentUrl))
+    // Show toast whether or not there's a note
+    if (match) injectToast(match)
   })
 }
 
