@@ -38,6 +38,7 @@ export type MessageType =
   | 'SHOW_TOAST'
   | 'SIGN_IN'
   | 'OPEN_POPUP'
+  | 'SAVE_NEW_PAGE_WITH_NOTE'
 
 export interface ChromeMessage {
   type: MessageType

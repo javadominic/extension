@@ -27,6 +27,8 @@ const firebaseConfig = {
 let _app: ReturnType<typeof initializeApp> | null = null
 let _db: ReturnType<typeof getFirestore> | null = null
 
+const skipGeminiForUrls = new Set<string>()
+
 function getDb() {
   if (!_db) {
     _app = initializeApp(firebaseConfig, 'background')
@@ -66,6 +68,12 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
 
   // Save the skeleton immediately so the popup can show it instantly
   await upsertBookmark(bm)
+
+  if (skipGeminiForUrls.has(node.url)) {
+    skipGeminiForUrls.delete(node.url)
+    // The SAVE_NEW_PAGE_WITH_NOTE handler will overwrite this with the user's note.
+    return
+  }
 
   if (settings.geminiApiKey) {
     bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
@@ -185,6 +193,32 @@ chrome.runtime.onMessage.addListener(
               await setPendingEdit(newBookmark.id)
               // Once created, immediately open the popup so the user can edit the note
               chrome.action.openPopup().catch(() => {})
+            })
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'SAVE_NEW_PAGE_WITH_NOTE': {
+            const { title, url, note } = message.payload as { title: string; url: string; note: string }
+            skipGeminiForUrls.add(url)
+            chrome.bookmarks.create({ title, url }, async (node) => {
+              // Wait briefly to allow onCreated to write the skeleton
+              setTimeout(async () => {
+                const cache = await getCachedBookmarks()
+                const bm = cache.find((b: BrainBookmark) => b.id === node.id)
+                if (bm) {
+                  bm.note = note
+                  await upsertBookmark(bm)
+                  const settings = await getSettings()
+                  const uid = settings.firebaseUid ?? ''
+                  if (uid) {
+                    try {
+                      const db = getDb()
+                      await setDoc(doc(db, 'bookmarks', uid, 'items', node.id), bm, { merge: true })
+                    } catch {}
+                  }
+                }
+              }, 500)
             })
             sendResponse({ success: true })
             break

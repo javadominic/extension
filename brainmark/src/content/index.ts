@@ -136,7 +136,7 @@ function createHost() {
   return host
 }
 
-function injectUnsavedWidget() {
+function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
   const host = createHost()
   const shadow = host.attachShadow({ mode: 'open' })
   const style = document.createElement('style')
@@ -145,7 +145,9 @@ function injectUnsavedWidget() {
 
   const toast = document.createElement('div')
   toast.className = 'toast small'
-  toast.innerHTML = `<span class="brand" style="font-size:15px; margin-right:4px;">🧠 Contextos</span> <span style="font-size:12px; font-weight:500; color:#cbd5e1;">＋ Save page</span>`
+  
+  const labelText = existingBookmark ? '＋ Add remark' : '＋ Save page'
+  toast.innerHTML = `<span class="brand" style="font-size:15px; margin-right:4px;">🧠 Contextos</span> <span style="font-size:12px; font-weight:500; color:#cbd5e1;">${labelText}</span>`
   shadow.appendChild(toast)
 
   // When clicked, expand to note-taking UI
@@ -185,19 +187,31 @@ function injectUnsavedWidget() {
       saveBtn.textContent = 'Saving...'
       saveBtn.style.opacity = '0.7'
       
-      // We send ADD_BOOKMARK, but wait, ADD_BOOKMARK in background creates the bookmark but doesn't easily let us set the note if it's async.
-      // Actually, we can use chrome.runtime.sendMessage to tell the background to create it, 
-      // but let's just use the OPEN_POPUP message trick we did earlier, OR we can implement a SAVE_NEW_PAGE message in background.
-      chrome.runtime.sendMessage({
-        type: 'SAVE_NEW_PAGE_WITH_NOTE',
-        payload: { title, url, note }
-      }, () => {
-        toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Saved successfully</div>`
-        setTimeout(() => {
-          toast.classList.add('dismiss')
-          setTimeout(() => host.remove(), 350)
-        }, 1500)
-      })
+      if (existingBookmark) {
+        // Just update the note on the existing bookmark
+        chrome.runtime.sendMessage({
+          type: 'SAVE_NOTE',
+          payload: { id: existingBookmark.id, note, tags: existingBookmark.tags, uid: existingBookmark.uid }
+        }, () => {
+          toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Note added successfully</div>`
+          setTimeout(() => {
+            toast.classList.add('dismiss')
+            setTimeout(() => host.remove(), 350)
+          }, 1500)
+        })
+      } else {
+        // Create new bookmark with the note
+        chrome.runtime.sendMessage({
+          type: 'SAVE_NEW_PAGE_WITH_NOTE',
+          payload: { title, url, note }
+        }, () => {
+          toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Saved successfully</div>`
+          setTimeout(() => {
+            toast.classList.add('dismiss')
+            setTimeout(() => host.remove(), 350)
+          }, 1500)
+        })
+      }
     })
   })
 }
@@ -264,6 +278,7 @@ function urlsMatch(a: string, b: string): boolean {
 
 function init() {
   const currentUrl = location.href
+
   chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS' }, (response) => {
     if (chrome.runtime.lastError || !response?.success || !Array.isArray(response.data)) return
     
@@ -273,8 +288,14 @@ function init() {
     if (match) {
       if (match.note) {
         const isDefault = match.note.startsWith('Interesting ') || match.note.startsWith('Saved for ')
-        if (!isDefault) injectToast(match)
+        if (!isDefault) {
+          injectToast(match)
+          return
+        }
       }
+      // If we reach here, the page is saved but has NO meaningful custom note.
+      // Show the widget so they can add a note inline!
+      injectUnsavedWidget(match)
     } else {
       // Not saved yet, show floating widget
       injectUnsavedWidget()

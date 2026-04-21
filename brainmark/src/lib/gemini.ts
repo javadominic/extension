@@ -34,14 +34,9 @@ export async function suggestNote(
     const prompt = `In one short sentence (max 15 words), explain why someone would save this bookmark:\nTitle: ${title}, URL: ${url}. Reply with only the note, no preamble.`
     return await callGemini(prompt, apiKey)
   } catch (err) {
-    if ((err as Error).message === 'RATE_LIMIT') return 'Saved for later reading.'
+    if ((err as Error).message === 'RATE_LIMIT') return ''
     console.error('[Gemini] suggestNote error:', err)
-    try {
-      const domain = new URL(url).hostname.replace(/^www\./, '')
-      return `Interesting find from ${domain} worth revisiting.`
-    } catch {
-      return 'Interesting resource worth revisiting.'
-    }
+    return ''
   }
 }
 
