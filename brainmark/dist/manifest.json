@@ -1,0 +1,79 @@
+{
+  "manifest_version": 3,
+  "name": "BrainMark",
+  "version": "1.0.0",
+  "description": "Smart bookmark memory assistant with AI",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "public/icons/icon16.png",
+      "48": "public/icons/icon48.png",
+      "128": "public/icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "service-worker-loader.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "assets/index.ts-DzyFb-QO.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "js": [
+        "assets/meetOverlay.ts-BDNUnfu_.js"
+      ],
+      "matches": [
+        "https://meet.google.com/*",
+        "https://zoom.us/*"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "bookmarks",
+    "storage",
+    "tabs",
+    "alarms",
+    "identity",
+    "identity.email"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "oauth2": {
+    "client_id": "YOUR_GOOGLE_CLIENT_ID",
+    "scopes": [
+      "openid",
+      "email",
+      "profile"
+    ]
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "assets/index.ts-DzyFb-QO.js"
+      ],
+      "use_dynamic_url": false
+    },
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://zoom.us/*"
+      ],
+      "resources": [
+        "assets/meetOverlay.ts-BDNUnfu_.js"
+      ],
+      "use_dynamic_url": false
+    }
+  ]
+}

@@ -40,6 +40,8 @@ export type MessageType =
   | 'DELETE_BOOKMARK'
   | 'SYNC_BOOKMARKS'
   | 'SHOW_TOAST'
+  | 'SIGN_IN'
+  | 'OPEN_POPUP'
 
 export interface ChromeMessage {
   type: MessageType
