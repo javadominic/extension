@@ -61,6 +61,13 @@ async function signInWithGoogle(): Promise<string | null> {
 
 chrome.bookmarks.onCreated.addListener(async (id, node) => {
   if (!node.url) return
+  
+  if (skipGeminiForUrls.has(node.url)) {
+    skipGeminiForUrls.delete(node.url)
+    // Completely ignore this event! The SAVE_NEW_PAGE_WITH_NOTE handler will manually save the bookmark to cache and Firebase.
+    return
+  }
+
   const settings = await getSettings()
   const uid = settings.firebaseUid ?? ''
 
@@ -68,12 +75,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
 
   // Save the skeleton immediately so the popup can show it instantly
   await upsertBookmark(bm)
-
-  if (skipGeminiForUrls.has(node.url)) {
-    skipGeminiForUrls.delete(node.url)
-    // The SAVE_NEW_PAGE_WITH_NOTE handler will overwrite this with the user's note.
-    return
-  }
 
   if (settings.geminiApiKey) {
     bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
@@ -202,23 +203,20 @@ chrome.runtime.onMessage.addListener(
             const { title, url, note } = message.payload as { title: string; url: string; note: string }
             skipGeminiForUrls.add(url)
             chrome.bookmarks.create({ title, url }, async (node) => {
-              // Wait briefly to allow onCreated to write the skeleton
-              setTimeout(async () => {
-                const cache = await getCachedBookmarks()
-                const bm = cache.find((b: BrainBookmark) => b.id === node.id)
-                if (bm) {
-                  bm.note = note
-                  await upsertBookmark(bm)
-                  const settings = await getSettings()
-                  const uid = settings.firebaseUid ?? ''
-                  if (uid) {
-                    try {
-                      const db = getDb()
-                      await setDoc(doc(db, 'bookmarks', uid, 'items', node.id), bm, { merge: true })
-                    } catch {}
-                  }
-                }
-              }, 500)
+              // We handle the FULL bookmark creation ourselves to avoid race conditions!
+              const settings = await getSettings()
+              const uid = settings.firebaseUid ?? ''
+              const bm = chromeNodeToBookmark(node, uid)
+              bm.note = note
+              
+              await upsertBookmark(bm)
+              
+              if (uid) {
+                try {
+                  const db = getDb()
+                  await setDoc(doc(db, 'bookmarks', uid, 'items', node.id), bm)
+                } catch {}
+              }
             })
             sendResponse({ success: true })
             break
