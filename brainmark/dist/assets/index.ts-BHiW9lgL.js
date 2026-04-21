@@ -1,17 +1,18 @@
-(function(){function m(t){var i,d,c,l;(i=document.querySelector("#contextos-toast-host"))==null||i.remove();const e=document.createElement("div");e.id="contextos-toast-host",document.body.appendChild(e);const o=e.attachShadow({mode:"open"}),n=document.createElement("style");n.textContent=`
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+(function(){function m(t){var r,c,d,l;(r=document.querySelector("#contextos-toast-host"))==null||r.remove();const e=document.createElement("div");e.id="contextos-toast-host",document.body.appendChild(e);const n=e.attachShadow({mode:"open"}),o=document.createElement("style");o.textContent=`
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Mono', system-ui, sans-serif; }
     .toast {
       position: fixed;
       bottom: 24px;
       right: 24px;
       z-index: 2147483647;
-      background: linear-gradient(135deg, #1a1a35 0%, #0f0f23 100%);
-      border: 1px solid #2a2a4a;
+      background: #161616;
+      border: 1px solid #262626;
       border-radius: 14px;
       padding: 14px 16px;
       max-width: 340px;
       min-width: 260px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,160,52,0.1);
       animation: slideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
       color: #e2e8f0;
     }
@@ -38,11 +39,13 @@
       border-radius: 4px;
     }
     .brand {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #818cf8;
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: normal;
+      text-transform: none;
+      color: #e8a034;
     }
     .close-btn {
       margin-left: auto;
@@ -70,9 +73,9 @@
       margin-bottom: 10px;
     }
     .tag {
-      background: rgba(99,102,241,0.15);
-      color: #a5b4fc;
-      border: 1px solid rgba(99,102,241,0.3);
+      background: rgba(232,160,52,0.1);
+      color: #e8a034;
+      border: 1px solid rgba(232,160,52,0.25);
       border-radius: 99px;
       padding: 2px 8px;
       font-size: 11px;
@@ -93,10 +96,10 @@
       transition: all 0.15s;
     }
     .btn-primary {
-      background: #6366f1;
-      color: #fff;
+      background: #e8a034;
+      color: #0c0c0c;
     }
-    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:hover { background: #d08c2a; }
     .btn-ghost {
       background: rgba(255,255,255,0.06);
       color: #94a3b8;
@@ -117,5 +120,5 @@
       <button class="btn btn-primary" id="bm-edit">Edit note</button>
       <button class="btn btn-ghost" id="bm-dismiss">Dismiss</button>
     </div>
-  `,o.appendChild(n),o.appendChild(a);let r;function s(){clearTimeout(r),a.classList.add("dismiss"),setTimeout(()=>e.remove(),350)}(d=o.getElementById("bm-close"))==null||d.addEventListener("click",s),(c=o.getElementById("bm-dismiss"))==null||c.addEventListener("click",s),(l=o.getElementById("bm-edit"))==null||l.addEventListener("click",()=>{chrome.runtime.sendMessage({type:"OPEN_POPUP"}).catch(()=>{}),s()}),r=setTimeout(s,5e3)}function g(t,e){try{const o=new URL(t),n=new URL(e);return o.hostname===n.hostname&&o.pathname.replace(/\/$/,"")===n.pathname.replace(/\/$/,"")}catch{return!1}}function f(){const t=location.href;chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},e=>{if(chrome.runtime.lastError||!(e!=null&&e.success)||!Array.isArray(e.data))return;const n=e.data.find(a=>g(a.url,t));n&&m(n)})}chrome.runtime.onMessage.addListener(t=>{t.type==="SHOW_TOAST"&&t.payload&&m(t.payload)});f();
+  `,n.appendChild(o),n.appendChild(a);let i;function s(){clearTimeout(i),a.classList.add("dismiss"),setTimeout(()=>e.remove(),350)}(c=n.getElementById("bm-close"))==null||c.addEventListener("click",s),(d=n.getElementById("bm-dismiss"))==null||d.addEventListener("click",s),(l=n.getElementById("bm-edit"))==null||l.addEventListener("click",()=>{chrome.runtime.sendMessage({type:"OPEN_POPUP"}).catch(()=>{}),s()}),i=setTimeout(s,5e3)}function f(t,e){try{const n=new URL(t),o=new URL(e);return n.hostname===o.hostname&&n.pathname.replace(/\/$/,"")===o.pathname.replace(/\/$/,"")}catch{return!1}}function u(){const t=location.href;chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},e=>{if(chrome.runtime.lastError||!(e!=null&&e.success)||!Array.isArray(e.data))return;const o=e.data.find(a=>f(a.url,t));o&&o.note&&(o.note.startsWith("Interesting ")||o.note.startsWith("Saved for ")||m(o))})}chrome.runtime.onMessage.addListener(t=>{t.type==="SHOW_TOAST"&&t.payload&&m(t.payload)});u();
 })()

@@ -15,19 +15,20 @@ function injectToast(bookmark: BrainBookmark) {
 
   const style = document.createElement('style')
   style.textContent = `
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Mono', system-ui, sans-serif; }
     .toast {
       position: fixed;
       bottom: 24px;
       right: 24px;
       z-index: 2147483647;
-      background: linear-gradient(135deg, #1a1a35 0%, #0f0f23 100%);
-      border: 1px solid #2a2a4a;
+      background: #161616;
+      border: 1px solid #262626;
       border-radius: 14px;
       padding: 14px 16px;
       max-width: 340px;
       min-width: 260px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,160,52,0.1);
       animation: slideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
       color: #e2e8f0;
     }
@@ -54,11 +55,13 @@ function injectToast(bookmark: BrainBookmark) {
       border-radius: 4px;
     }
     .brand {
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #818cf8;
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: normal;
+      text-transform: none;
+      color: #e8a034;
     }
     .close-btn {
       margin-left: auto;
@@ -86,9 +89,9 @@ function injectToast(bookmark: BrainBookmark) {
       margin-bottom: 10px;
     }
     .tag {
-      background: rgba(99,102,241,0.15);
-      color: #a5b4fc;
-      border: 1px solid rgba(99,102,241,0.3);
+      background: rgba(232,160,52,0.1);
+      color: #e8a034;
+      border: 1px solid rgba(232,160,52,0.25);
       border-radius: 99px;
       padding: 2px 8px;
       font-size: 11px;
@@ -109,10 +112,10 @@ function injectToast(bookmark: BrainBookmark) {
       transition: all 0.15s;
     }
     .btn-primary {
-      background: #6366f1;
-      color: #fff;
+      background: #e8a034;
+      color: #0c0c0c;
     }
-    .btn-primary:hover { background: #4f46e5; }
+    .btn-primary:hover { background: #d08c2a; }
     .btn-ghost {
       background: rgba(255,255,255,0.06);
       color: #94a3b8;
@@ -189,8 +192,14 @@ function init() {
     if (!response?.success || !Array.isArray(response.data)) return
     const bookmarks = response.data as BrainBookmark[]
     const match = bookmarks.find((b) => urlsMatch(b.url, currentUrl))
-    // Show toast whether or not there's a note
-    if (match) injectToast(match)
+    
+    if (match && match.note) {
+      // Don't pop up for empty or default AI fallback notes
+      const isDefault = match.note.startsWith('Interesting ') || match.note.startsWith('Saved for ')
+      if (!isDefault) {
+        injectToast(match)
+      }
+    }
   })
 }
 

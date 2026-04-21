@@ -66,7 +66,7 @@ export default function SearchPage() {
   async function handleSaveNote(note: string, tags: string[]) {
     if (!editing) return
     const settings = await getSettings()
-    await updateNote(editing.id, note, settings.firebaseUid ?? '')
+    await updateNote(editing.id, note, tags, settings.firebaseUid ?? '')
     setAll((prev) => prev.map((b) => b.id === editing.id ? { ...b, note, tags } : b))
     setEditing(null)
     setToast({ msg: 'Note saved!', type: 'success' })

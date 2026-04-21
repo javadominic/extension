@@ -1,15 +1,15 @@
-(function(){let t=null,n=null,r=!1,l={x:0,y:0};const h=`
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+(function(){let t=null,n=null,d=!1,c={x:0,y:0};const h=`
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Mono', system-ui, sans-serif; }
 
   .panel {
     position: fixed;
     bottom: 80px;
     right: 20px;
     width: 280px;
-    background: linear-gradient(160deg, #1a1a35 0%, #0f0f23 100%);
-    border: 1px solid rgba(99,102,241,0.3);
-    border-radius: 16px;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1);
+    background: #161616;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(232,160,52,0.1);
     z-index: 2147483647;
     color: #e2e8f0;
     overflow: hidden;
@@ -25,15 +25,17 @@
     display: flex;
     align-items: center;
     padding: 12px 14px;
-    background: rgba(99,102,241,0.1);
+    background: rgba(255,255,255,0.02);
     border-bottom: 1px solid rgba(255,255,255,0.06);
     cursor: grab;
   }
   .panel-header:active { cursor: grabbing; }
   .panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #a5b4fc;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 18px;
+    font-weight: 400;
+    color: #e8a034;
     flex: 1;
   }
   .icon-btn {
@@ -52,7 +54,7 @@
     overflow-y: auto;
     padding: 8px 0;
     scrollbar-width: thin;
-    scrollbar-color: rgba(99,102,241,0.4) transparent;
+    scrollbar-color: rgba(232,160,52,0.3) transparent;
   }
   .panel-body.minimized { display: none; }
   .bm-item {
@@ -98,8 +100,8 @@
   .save-btn {
     flex: 1;
     padding: 7px;
-    background: #6366f1;
-    color: #fff;
+    background: #e8a034;
+    color: #0c0c0c;
     border: none;
     border-radius: 8px;
     font-size: 12px;
@@ -107,15 +109,18 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .save-btn:hover { background: #4f46e5; }
-`;function g(o){var p,m,b;const a=document.createElement("div");a.id="contextos-meet-panel-host",document.body.appendChild(a),n=a.attachShadow({mode:"open"});const s=document.createElement("style");s.textContent=h,t=document.createElement("div"),t.className="panel";const c=o.slice(0,8);t.innerHTML=`
+  .save-btn:hover { background: #d08c2a; }
+`;function g(o){var m,b,u;const r=document.createElement("div");r.id="contextos-meet-panel-host",document.body.appendChild(r),n=r.attachShadow({mode:"open"});const s=document.createElement("style");s.textContent=`
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+    ${h}
+  `,t=document.createElement("div"),t.className="panel";const a=o.slice(0,8);t.innerHTML=`
     <div class="panel-header" id="bm-drag-handle">
       <span class="panel-title">🧠 Contextos</span>
       <button class="icon-btn" id="bm-minimize" title="Minimize">—</button>
       <button class="icon-btn" id="bm-close-panel" title="Close">×</button>
     </div>
     <div class="panel-body" id="bm-panel-body">
-      ${c.length?c.map(e=>{const i=(()=>{try{return new URL(e.url).hostname}catch{return""}})();return`
+      ${a.length?a.map(e=>{const i=(()=>{try{return new URL(e.url).hostname}catch{return""}})();return`
               <div class="bm-item" data-url="${e.url}">
                 <img class="favicon" src="https://www.google.com/s2/favicons?domain=${i}&sz=32" alt="" onerror="this.style.display='none'"/>
                 <div class="bm-info">
@@ -128,5 +133,5 @@
     <div class="quick-save">
       <button class="save-btn" id="bm-quick-save">＋ Save this page</button>
     </div>
-  `,n.appendChild(s),n.appendChild(t);const x=n.getElementById("bm-panel-body");let d=!1;(p=n.getElementById("bm-minimize"))==null||p.addEventListener("click",()=>{d=!d,x.classList.toggle("minimized",d);const e=n.getElementById("bm-minimize");e.textContent=d?"▲":"—"}),(m=n.getElementById("bm-close-panel"))==null||m.addEventListener("click",()=>{a.remove()}),(b=n.getElementById("bm-quick-save"))==null||b.addEventListener("click",()=>{chrome.bookmarks.create({title:document.title,url:location.href},()=>{})}),n.querySelectorAll(".bm-item").forEach(e=>{e.addEventListener("click",()=>{const i=e.dataset.url;i&&window.open(i,"_blank")})}),n.getElementById("bm-drag-handle").addEventListener("mousedown",e=>{const i=e;r=!0;const u=t.getBoundingClientRect();l={x:i.clientX-u.left,y:i.clientY-u.top}}),document.addEventListener("mousemove",e=>{!r||!t||(t.style.left=`${e.clientX-l.x}px`,t.style.top=`${e.clientY-l.y}px`,t.style.right="auto",t.style.bottom="auto")}),document.addEventListener("mouseup",()=>{r=!1})}function f(){document.getElementById("contextos-meet-panel-host")||chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},o=>{if(!(o!=null&&o.success)||!Array.isArray(o.data)){g([]);return}g(o.data)})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",f):f();
+  `,n.appendChild(s),n.appendChild(t);const p=n.getElementById("bm-panel-body");let l=!1;(m=n.getElementById("bm-minimize"))==null||m.addEventListener("click",()=>{l=!l,p.classList.toggle("minimized",l);const e=n.getElementById("bm-minimize");e.textContent=l?"▲":"—"}),(b=n.getElementById("bm-close-panel"))==null||b.addEventListener("click",()=>{r.remove()}),(u=n.getElementById("bm-quick-save"))==null||u.addEventListener("click",()=>{chrome.runtime.sendMessage({type:"ADD_BOOKMARK",payload:{title:document.title,url:location.href}})}),n.querySelectorAll(".bm-item").forEach(e=>{e.addEventListener("click",()=>{const i=e.dataset.url;i&&window.open(i,"_blank")})}),n.getElementById("bm-drag-handle").addEventListener("mousedown",e=>{const i=e;d=!0;const f=t.getBoundingClientRect();c={x:i.clientX-f.left,y:i.clientY-f.top}}),document.addEventListener("mousemove",e=>{!d||!t||(t.style.left=`${e.clientX-c.x}px`,t.style.top=`${e.clientY-c.y}px`,t.style.right="auto",t.style.bottom="auto")}),document.addEventListener("mouseup",()=>{d=!1})}function x(){document.getElementById("contextos-meet-panel-host")||chrome.runtime.sendMessage({type:"GET_BOOKMARKS"},o=>{if(!(o!=null&&o.success)||!Array.isArray(o.data)){g([]);return}const s=o.data.filter(a=>a.note?!(a.note.startsWith("Interesting ")||a.note.startsWith("Saved for ")):!1);g(s)})}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",x):x();
 })()

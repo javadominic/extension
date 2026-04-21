@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-BrMd8DXG.js"
+        "assets/index.ts-BHiW9lgL.js"
       ],
       "matches": [
         "<all_urls>"
@@ -35,7 +35,7 @@
     },
     {
       "js": [
-        "assets/meetOverlay.ts-Cn663c_j.js"
+        "assets/meetOverlay.ts-BVgfMdHB.js"
       ],
       "matches": [
         "https://meet.google.com/*",
@@ -62,7 +62,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-BrMd8DXG.js"
+        "assets/index.ts-BHiW9lgL.js"
       ],
       "use_dynamic_url": false
     },
@@ -72,7 +72,7 @@
         "https://zoom.us/*"
       ],
       "resources": [
-        "assets/meetOverlay.ts-Cn663c_j.js"
+        "assets/meetOverlay.ts-BVgfMdHB.js"
       ],
       "use_dynamic_url": false
     }

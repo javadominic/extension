@@ -36,7 +36,12 @@ export async function suggestNote(
   } catch (err) {
     if ((err as Error).message === 'RATE_LIMIT') return 'Saved for later reading.'
     console.error('[Gemini] suggestNote error:', err)
-    return 'Interesting resource worth revisiting.'
+    try {
+      const domain = new URL(url).hostname.replace(/^www\./, '')
+      return `Interesting find from ${domain} worth revisiting.`
+    } catch {
+      return 'Interesting resource worth revisiting.'
+    }
   }
 }
 

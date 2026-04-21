@@ -60,10 +60,23 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
   const tree = await chrome.bookmarks.getTree()
   const flat = flattenTree(tree)
   const settings = await getSettings()
+  
+  // Get existing bookmarks to preserve custom notes and tags
+  const existing = await getCachedBookmarks()
+  const existingMap = new Map(existing.map((b) => [b.id, b]))
 
   const bookmarks: BrainBookmark[] = await Promise.all(
     flat.map(async (node) => {
+      const existingBm = existingMap.get(node.id)
       const bm = chromeNodeToBookmark(node, uid)
+      
+      // Preserve existing data if present
+      if (existingBm) {
+        bm.note = existingBm.note
+        bm.tags = existingBm.tags
+        bm.health = existingBm.health
+      }
+
       if (settings.geminiApiKey && !bm.note) {
         bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
         bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey)
@@ -94,20 +107,22 @@ export async function saveBookmark(bm: BrainBookmark): Promise<void> {
   }
 }
 
-/** Update only the note field for a bookmark. */
+/** Update the note and tags field for a bookmark. */
 export async function updateNote(
   id: string,
   note: string,
+  tags: string[],
   uid: string
 ): Promise<void> {
   const cache = await getCachedBookmarks()
   const bm = cache.find((b) => b.id === id)
   if (!bm) return
   bm.note = note
+  bm.tags = tags
   await upsertBookmark(bm)
   if (uid) {
     const ref = doc(db, 'bookmarks', uid, 'items', id)
-    await updateDoc(ref, { note })
+    await updateDoc(ref, { note, tags })
   }
 }
 

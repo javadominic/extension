@@ -8,6 +8,7 @@ import {
   upsertBookmark,
   removeBookmark,
   saveFirebaseToken,
+  setPendingEdit,
 } from '../lib/storage'
 import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
@@ -63,12 +64,15 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
 
   const bm: BrainBookmark = chromeNodeToBookmark(node, uid)
 
+  // Save the skeleton immediately so the popup can show it instantly
+  await upsertBookmark(bm)
+
   if (settings.geminiApiKey) {
     bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
     bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey)
+    // Update cache with AI notes
+    await upsertBookmark(bm)
   }
-
-  await upsertBookmark(bm)
 
   if (uid) {
     try {
@@ -124,15 +128,17 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'SAVE_NOTE': {
-            const { id, note, uid } = message.payload as {
+            const { id, note, tags, uid } = message.payload as {
               id: string
               note: string
+              tags: string[]
               uid: string
             }
             const cache = await getCachedBookmarks()
             const bm = cache.find((b: BrainBookmark) => b.id === id)
             if (bm) {
               bm.note = note
+              bm.tags = tags || bm.tags
               await upsertBookmark(bm)
               if (uid) {
                 try {
@@ -167,6 +173,19 @@ chrome.runtime.onMessage.addListener(
           case 'OPEN_POPUP': {
             // Opens the extension popup programmatically (MV3 workaround)
             await chrome.action.openPopup().catch(() => {})
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'ADD_BOOKMARK': {
+            const { title, url } = message.payload as { title: string; url: string }
+            // Create the bookmark. The onCreated listener will handle Gemini processing.
+            chrome.bookmarks.create({ title, url }, async (newBookmark) => {
+              // Tell the popup to open the modal for this new bookmark immediately
+              await setPendingEdit(newBookmark.id)
+              // Once created, immediately open the popup so the user can edit the note
+              chrome.action.openPopup().catch(() => {})
+            })
             sendResponse({ success: true })
             break
           }

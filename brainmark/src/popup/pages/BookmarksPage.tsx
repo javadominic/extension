@@ -25,7 +25,16 @@ export default function BookmarksPage() {
   const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
-    getCachedBookmarks().then(setBookmarks)
+    import('../../lib/storage').then(({ getAndClearPendingEdit }) => {
+      getCachedBookmarks().then(async (data) => {
+        setBookmarks(data)
+        const pendingId = await getAndClearPendingEdit()
+        if (pendingId) {
+          const bm = data.find((b) => b.id === pendingId)
+          if (bm) setEditing(bm)
+        }
+      })
+    })
   }, [])
 
   // Collect all unique tags
@@ -60,7 +69,7 @@ export default function BookmarksPage() {
   async function handleSaveNote(note: string, tags: string[]) {
     if (!editing) return
     const settings = await getSettings()
-    await updateNote(editing.id, note, settings.firebaseUid ?? '')
+    await updateNote(editing.id, note, tags, settings.firebaseUid ?? '')
     setBookmarks((prev) =>
       prev.map((b) => b.id === editing.id ? { ...b, note, tags } : b)
     )

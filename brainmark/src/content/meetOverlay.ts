@@ -7,17 +7,17 @@ let isDragging = false
 let dragOffset = { x: 0, y: 0 }
 
 const PANEL_STYLE = `
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Mono', system-ui, sans-serif; }
 
   .panel {
     position: fixed;
     bottom: 80px;
     right: 20px;
     width: 280px;
-    background: linear-gradient(160deg, #1a1a35 0%, #0f0f23 100%);
-    border: 1px solid rgba(99,102,241,0.3);
-    border-radius: 16px;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.1);
+    background: #161616;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.8), 0 0 0 1px rgba(232,160,52,0.1);
     z-index: 2147483647;
     color: #e2e8f0;
     overflow: hidden;
@@ -33,15 +33,17 @@ const PANEL_STYLE = `
     display: flex;
     align-items: center;
     padding: 12px 14px;
-    background: rgba(99,102,241,0.1);
+    background: rgba(255,255,255,0.02);
     border-bottom: 1px solid rgba(255,255,255,0.06);
     cursor: grab;
   }
   .panel-header:active { cursor: grabbing; }
   .panel-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #a5b4fc;
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-size: 18px;
+    font-weight: 400;
+    color: #e8a034;
     flex: 1;
   }
   .icon-btn {
@@ -60,7 +62,7 @@ const PANEL_STYLE = `
     overflow-y: auto;
     padding: 8px 0;
     scrollbar-width: thin;
-    scrollbar-color: rgba(99,102,241,0.4) transparent;
+    scrollbar-color: rgba(232,160,52,0.3) transparent;
   }
   .panel-body.minimized { display: none; }
   .bm-item {
@@ -106,8 +108,8 @@ const PANEL_STYLE = `
   .save-btn {
     flex: 1;
     padding: 7px;
-    background: #6366f1;
-    color: #fff;
+    background: #e8a034;
+    color: #0c0c0c;
     border: none;
     border-radius: 8px;
     font-size: 12px;
@@ -115,7 +117,7 @@ const PANEL_STYLE = `
     cursor: pointer;
     transition: background 0.15s;
   }
-  .save-btn:hover { background: #4f46e5; }
+  .save-btn:hover { background: #d08c2a; }
 `
 
 function buildPanel(bookmarks: BrainBookmark[]) {
@@ -125,7 +127,10 @@ function buildPanel(bookmarks: BrainBookmark[]) {
   shadow = host.attachShadow({ mode: 'open' })
 
   const style = document.createElement('style')
-  style.textContent = PANEL_STYLE
+  style.textContent = `
+    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
+    ${PANEL_STYLE}
+  `
 
   panel = document.createElement('div')
   panel.className = 'panel'
@@ -179,10 +184,10 @@ function buildPanel(bookmarks: BrainBookmark[]) {
   })
 
   shadow.getElementById('bm-quick-save')?.addEventListener('click', () => {
-    chrome.bookmarks.create(
-      { title: document.title, url: location.href },
-      () => {}
-    )
+    chrome.runtime.sendMessage({
+      type: 'ADD_BOOKMARK',
+      payload: { title: document.title, url: location.href }
+    })
   })
 
   // Click bookmark items
@@ -221,7 +226,14 @@ function init() {
       buildPanel([])
       return
     }
-    buildPanel(response.data as BrainBookmark[])
+    const all = response.data as BrainBookmark[]
+    // Filter out bookmarks that don't have a real custom note
+    const relevant = all.filter(bm => {
+      if (!bm.note) return false
+      const isDefault = bm.note.startsWith('Interesting ') || bm.note.startsWith('Saved for ')
+      return !isDefault
+    })
+    buildPanel(relevant)
   })
 }
 

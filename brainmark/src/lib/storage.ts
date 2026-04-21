@@ -81,3 +81,16 @@ export async function getFirebaseToken(): Promise<string | null> {
   const result = await chrome.storage.local.get('firebase_token')
   return result.firebase_token ?? null
 }
+
+export async function setPendingEdit(id: string) {
+  await chrome.storage.local.set({ pending_edit: id })
+}
+
+export async function getAndClearPendingEdit(): Promise<string | null> {
+  const res = await chrome.storage.local.get('pending_edit')
+  if (res.pending_edit) {
+    await chrome.storage.local.remove('pending_edit')
+    return res.pending_edit
+  }
+  return null
+}
