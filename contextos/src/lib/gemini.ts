@@ -1,7 +1,7 @@
 import type { BrainBookmark } from '../types'
 
 const BASE_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch(`${BASE_URL}?key=${apiKey}`, {
@@ -28,10 +28,15 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
 export async function suggestNote(
   url: string,
   title: string,
-  apiKey: string
+  apiKey: string,
+  pageText?: string
 ): Promise<string> {
   try {
-    const prompt = `In one short sentence (max 15 words), explain why someone would save this bookmark:\nTitle: ${title}, URL: ${url}. Reply with only the note, no preamble.`
+    let prompt = `You are a bookmark assistant. Suggest in ONE short sentence (max 15 words) why someone saved this bookmark. Always provide an answer even if the page is unknown — base it on the title or URL.\nTitle: ${title}\nURL: ${url}`
+    if (pageText && pageText.trim().length > 30) {
+      prompt += `\nPage content snippet:\n${pageText.substring(0, 3000)}`
+    }
+    prompt += `\n\nRespond with ONLY the suggestion sentence. No intro, no quotes, no preamble.`
     return await callGemini(prompt, apiKey)
   } catch (err) {
     if ((err as Error).message === 'RATE_LIMIT') return ''
@@ -45,10 +50,16 @@ export async function autoTag(
   url: string,
   title: string,
   note: string,
-  apiKey: string
+  apiKey: string,
+  pageText?: string
 ): Promise<string[]> {
   try {
-    const prompt = `Generate 2-4 short lowercase tags for this bookmark.\nTitle: ${title}, URL: ${url}, Note: ${note}.\nReply with only a JSON array of strings like ["tag1","tag2"]. No explanation.`
+    let prompt = `Generate 2-4 short lowercase tags for this bookmark.\nTitle: ${title}, URL: ${url}, Note: ${note}.`
+    if (pageText) {
+      prompt += `\nPage Content Snippet:\n${pageText}\n`
+    }
+    prompt += `\nReply with only a JSON array of strings like ["tag1","tag2"]. No explanation.`
+    
     const raw = await callGemini(prompt, apiKey)
     // Extract JSON array from response
     const match = raw.match(/\[.*?\]/s)

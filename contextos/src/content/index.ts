@@ -111,6 +111,30 @@ const SHARED_STYLE = `
   .btn-ghost { background: rgba(255,255,255,0.06); color: #94a3b8; }
   .btn-ghost:hover { background: rgba(255,255,255,0.1); }
   
+  .note-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .note-card-num {
+    color: #e8a034;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .note-card-text {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #cbd5e1;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
   .note-input {
     width: 100%;
     height: 60px;
@@ -146,7 +170,9 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
   const toast = document.createElement('div')
   toast.className = 'toast small'
   
-  const labelText = existingBookmark ? '＋ Add remark' : '＋ Save page'
+  const hasExistingNote = existingBookmark && existingBookmark.note && !existingBookmark.note.startsWith('Interesting') && !existingBookmark.note.startsWith('Saved')
+  const labelText = hasExistingNote ? '＋ Add another remark' : (existingBookmark ? '＋ Add remark' : '＋ Save page')
+  
   toast.innerHTML = `
     <div style="display: flex; align-items: center; width: 100%;">
       <span class="brand" style="font-size:15px; margin-right:4px; cursor:pointer;">🧠 Contextos</span>
@@ -215,10 +241,10 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
       saveBtn.style.opacity = '0.7'
       
       if (existingBookmark) {
-        // Just update the note on the existing bookmark
+        // APPEND to existing note — never overwrite!
         chrome.runtime.sendMessage({
-          type: 'SAVE_NOTE',
-          payload: { id: existingBookmark.id, note, tags: existingBookmark.tags, uid: existingBookmark.uid }
+          type: 'APPEND_NOTE',
+          payload: { id: existingBookmark.id, newNote: note, uid: existingBookmark.uid }
         }, () => {
           toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Note added successfully</div>`
           setTimeout(() => {
@@ -243,7 +269,7 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
   })
 }
 
-function injectToast(bookmark: BrainBookmark) {
+function injectToast(bookmark: BrainBookmark, onDismissed?: () => void) {
   const host = createHost()
   const shadow = host.attachShadow({ mode: 'open' })
   const style = document.createElement('style')
@@ -257,18 +283,33 @@ function injectToast(bookmark: BrainBookmark) {
     try { return new URL(bookmark.url).hostname } catch { return '' }
   })()
 
+  const noteEntries = bookmark.note
+    ? bookmark.note.split(/\n\n---\n/).map((n: string) => n.trim()).filter(Boolean)
+    : []
+
+  const notesHTML = noteEntries.length > 0
+    ? `<div style="margin-bottom:10px">
+        <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
+          ${noteEntries.length} note${noteEntries.length > 1 ? 's' : ''}
+        </div>
+        ${noteEntries.map((n: string, i: number) => `
+          <div class="note-card">
+            <span class="note-card-num">#${i + 1}</span>
+            <span class="note-card-text">${n.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+          </div>
+        `).join('')}
+      </div>`
+    : `<div class="note"><em style="color:#64748b">No note yet — click Edit to add one.</em></div>`
+
   toast.innerHTML = `
     <div class="header">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" alt="" onerror="this.style.display='none'"/>
       <span class="brand">🧠 Contextos</span>
       <button class="close-btn" id="bm-close">×</button>
     </div>
-    <div class="note">
-      <strong>You saved this because:</strong><br/>
-      ${bookmark.note || '<em style="color:#64748b">No note yet — click Edit to add one.</em>'}
-    </div>
+    ${notesHTML}
     ${bookmark.tags && bookmark.tags.length
-      ? `<div class="tags">${bookmark.tags.map((t) => `<span class="tag">#${t}</span>`).join('')}</div>`
+      ? `<div class="tags">${bookmark.tags.map((t: string) => `<span class="tag">#${t}</span>`).join('')}</div>`
       : ''
     }
     <div class="actions">
@@ -282,7 +323,10 @@ function injectToast(bookmark: BrainBookmark) {
   function dismiss() {
     clearTimeout(timer)
     toast.classList.add('dismiss')
-    setTimeout(() => host.remove(), 350)
+    setTimeout(() => {
+      host.remove()
+      if (onDismissed) onDismissed()
+    }, 350)
   }
 
   shadow.getElementById('bm-close')?.addEventListener('click', dismiss)
@@ -316,7 +360,10 @@ function init() {
       if (match.note) {
         const isDefault = match.note.startsWith('Interesting ') || match.note.startsWith('Saved for ')
         if (!isDefault) {
-          injectToast(match)
+          injectToast(match, () => {
+            // Once the toast disappears, show the widget so they can append more notes
+            injectUnsavedWidget(match)
+          })
           return
         }
       }
@@ -330,9 +377,13 @@ function init() {
   })
 }
 
-chrome.runtime.onMessage.addListener((msg) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'SHOW_TOAST' && msg.payload) {
     injectToast(msg.payload as BrainBookmark)
+  } else if (msg.type === 'EXTRACT_TEXT') {
+    // Return up to 5000 chars of the page text securely
+    const text = (document.body?.innerText || document.documentElement?.innerText || '').substring(0, 5000)
+    sendResponse({ text })
   }
 })
 

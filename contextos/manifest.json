@@ -43,8 +43,7 @@
     "storage",
     "tabs",
     "alarms",
-    "identity",
-    "identity.email"
+    "identity"
   ],
   "host_permissions": ["<all_urls>"],
   "minimum_chrome_version": "88"

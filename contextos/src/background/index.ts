@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import { suggestNote, autoTag } from '../lib/gemini'
+import { getActiveTabText } from '../lib/pageText'
 import {
   getSettings,
   getCachedBookmarks,
@@ -77,8 +78,10 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   await upsertBookmark(bm)
 
   if (settings.geminiApiKey) {
-    bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
-    bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey)
+    const pageText = await getActiveTabText()
+
+    bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey, pageText)
+    bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
     // Update cache with AI notes
     await upsertBookmark(bm)
   }
@@ -91,7 +94,7 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   }
 
   // Notify active tab to show toast
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
   if (tabs[0]?.id) {
     chrome.tabs.sendMessage(tabs[0].id, {
       type: 'SHOW_TOAST',
@@ -160,6 +163,34 @@ chrome.runtime.onMessage.addListener(
             break
           }
 
+          case 'APPEND_NOTE': {
+            // Appends a new remark to an existing bookmark note
+            const { id: aId, newNote, uid: aUid } = message.payload as {
+              id: string; newNote: string; uid: string
+            }
+            const cache = await getCachedBookmarks()
+            const bm = cache.find((b: BrainBookmark) => b.id === aId)
+            if (bm) {
+              bm.note = bm.note ? `${bm.note}\n\n---\n${newNote}` : newNote
+              await upsertBookmark(bm)
+              if (aUid) {
+                try {
+                  const db = getDb()
+                  await setDoc(doc(db, 'bookmarks', aUid, 'items', aId), bm, { merge: true })
+                } catch {}
+              }
+            }
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'GET_PAGE_TEXT': {
+            // Proxy: extract page text from the real active tab (not the popup)
+            const text = await getActiveTabText()
+            sendResponse({ success: true, data: text })
+            break
+          }
+
           case 'CHECK_HEALTH': {
             const { url } = message.payload as { url: string }
             const status = await checkUrl(url)
@@ -210,6 +241,11 @@ chrome.runtime.onMessage.addListener(
               bm.note = note
               
               await upsertBookmark(bm)
+              if (settings.geminiApiKey) {
+                const pageText = await getActiveTabText()
+                bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
+                await upsertBookmark(bm)
+              }
               
               if (uid) {
                 try {

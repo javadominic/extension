@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-CQTocQkt.js"
+        "assets/index.ts-ERJ-spYt.js"
       ],
       "matches": [
         "<all_urls>"
@@ -49,8 +49,7 @@
     "storage",
     "tabs",
     "alarms",
-    "identity",
-    "identity.email"
+    "identity"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -62,7 +61,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-CQTocQkt.js"
+        "assets/index.ts-ERJ-spYt.js"
       ],
       "use_dynamic_url": false
     },

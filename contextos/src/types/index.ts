@@ -30,8 +30,10 @@ export interface AppSettings {
 export type MessageType =
   | 'GET_BOOKMARKS'
   | 'SAVE_NOTE'
+  | 'APPEND_NOTE'
   | 'CHECK_HEALTH'
   | 'GET_SETTINGS'
+  | 'GET_PAGE_TEXT'
   | 'ADD_BOOKMARK'
   | 'DELETE_BOOKMARK'
   | 'SYNC_BOOKMARKS'
