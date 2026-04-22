@@ -147,11 +147,39 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
   toast.className = 'toast small'
   
   const labelText = existingBookmark ? '＋ Add remark' : '＋ Save page'
-  toast.innerHTML = `<span class="brand" style="font-size:15px; margin-right:4px;">🧠 Contextos</span> <span style="font-size:12px; font-weight:500; color:#cbd5e1;">${labelText}</span>`
+  toast.innerHTML = `
+    <div style="display: flex; align-items: center; width: 100%;">
+      <span class="brand" style="font-size:15px; margin-right:4px; cursor:pointer;">🧠 Contextos</span>
+      <span style="font-size:12px; font-weight:500; color:#cbd5e1; flex: 1; cursor:pointer;">${labelText}</span>
+      <button class="close-btn" id="bm-widget-close" style="margin-left: 8px; font-size: 16px; z-index: 10;">×</button>
+    </div>
+  `
   shadow.appendChild(toast)
 
+  let autoDismissTimer: ReturnType<typeof setTimeout>
+
+  function dismissWidget() {
+    clearTimeout(autoDismissTimer)
+    toast.classList.add('dismiss')
+    setTimeout(() => host.remove(), 350)
+  }
+
+  // Auto dismiss after 5 seconds
+  autoDismissTimer = setTimeout(dismissWidget, 5000)
+
+  const closeWidgetBtn = shadow.getElementById('bm-widget-close')!
+  closeWidgetBtn.addEventListener('click', (e) => {
+    e.stopPropagation() // Prevent the widget from expanding
+    dismissWidget()
+  })
+
   // When clicked, expand to note-taking UI
-  toast.addEventListener('click', () => {
+  toast.addEventListener('click', (e) => {
+    // Prevent expanding if the close button was somehow clicked but propagation wasn't stopped
+    if ((e.target as HTMLElement).id === 'bm-widget-close') return
+
+    clearTimeout(autoDismissTimer) // Stop it from disappearing while they type!
+
     toast.className = 'toast expanded'
     toast.innerHTML = `
       <div class="header" style="margin-bottom: 8px;">
@@ -173,8 +201,7 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
 
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation()
-      toast.classList.add('dismiss')
-      setTimeout(() => host.remove(), 350)
+      dismissWidget()
     })
 
     saveBtn.addEventListener('click', (e) => {
