@@ -1,11 +1,21 @@
 /**
  * Safely extracts page text from the active tab.
- * Returns an empty string if the tab is not injectable (e.g. chrome://, pdf, new tab).
+ * When called from a service worker while the extension popup is open,
+ * `lastFocusedWindow` resolves to the popup window (which has no injectable tab).
+ * We therefore scan ALL windows to find the first real http/https tab.
  */
 export async function getActiveTabText(): Promise<string> {
   try {
-    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
-    const tab = tabs[0]
+    // Try the active tab in the last focused window first (works when popup is not open)
+    let tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
+    let tab = tabs.find(t => t.url && /^https?:\/\//.test(t.url))
+
+    // Fallback: scan every window for an active http/https tab
+    if (!tab) {
+      tabs = await chrome.tabs.query({ active: true })
+      tab = tabs.find(t => t.url && /^https?:\/\//.test(t.url))
+    }
+
     if (!tab?.id || !tab.url) return ''
 
     // Content scripts cannot be injected into these URLs
@@ -17,8 +27,7 @@ export async function getActiveTabText(): Promise<string> {
       /\.pdf(\?.*)?$/i,
       /^https?:\/\/(newtab|new-tab)/,
     ]
-    const isNonInjectable = nonInjectablePatterns.some((p) => p.test(tab.url!))
-    if (isNonInjectable) return ''
+    if (nonInjectablePatterns.some(p => p.test(tab!.url!))) return ''
 
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TEXT' })
     return response?.text ?? ''

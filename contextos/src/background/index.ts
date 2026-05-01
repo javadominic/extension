@@ -270,7 +270,13 @@ chrome.runtime.onMessage.addListener(
               break
             }
             const pageText = await getActiveTabText()
-            const note = await suggestNote(snUrl, snTitle, settings.geminiApiKey, pageText)
+            let note: string
+            try {
+              note = await suggestNote(snUrl, snTitle, settings.geminiApiKey, pageText)
+            } catch (geminiErr) {
+              sendResponse({ success: false, error: String(geminiErr) })
+              break
+            }
             if (!note) {
               sendResponse({ success: false, error: 'EMPTY' })
               break

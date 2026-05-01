@@ -332,7 +332,11 @@ function injectToast(bookmark: BrainBookmark, onDismissed?: () => void) {
   shadow.getElementById('bm-close')?.addEventListener('click', dismiss)
   shadow.getElementById('bm-dismiss')?.addEventListener('click', dismiss)
   shadow.getElementById('bm-edit')?.addEventListener('click', () => {
-    chrome.runtime.sendMessage({ type: 'OPEN_POPUP' }).catch(() => {})
+    // Set the pending edit BEFORE opening the popup so BookmarksPage
+    // can immediately open the modal for this specific bookmark.
+    chrome.storage.local.set({ pending_edit: bookmark.id }, () => {
+      chrome.runtime.sendMessage({ type: 'OPEN_POPUP' }).catch(() => {})
+    })
     dismiss()
   })
 

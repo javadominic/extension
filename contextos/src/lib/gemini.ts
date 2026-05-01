@@ -21,27 +21,45 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
   }
 
   const data = await response.json()
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+  
+  if (data?.promptFeedback?.blockReason) {
+    throw new Error(`Gemini blocked prompt (${data.promptFeedback.blockReason}).`)
+  }
+
+  const candidate = data?.candidates?.[0]
+  // Safety filter or recitation block — candidate exists but content is null
+  if (candidate && !candidate.content) {
+    const reason = candidate.finishReason ?? 'SAFETY'
+    throw new Error(`Gemini blocked response (${reason}).`)
+  }
+  
+  const text = candidate?.content?.parts?.[0]?.text?.trim() ?? ''
+  if (!text) {
+    throw new Error('Gemini API returned empty response structure.')
+  }
+  return text
 }
 
-/** Suggest why someone saved a bookmark (max 15 words). */
+/** Suggest why someone saved a bookmark (max 15 words). Throws on real API errors. */
 export async function suggestNote(
   url: string,
   title: string,
   apiKey: string,
   pageText?: string
 ): Promise<string> {
+  // Strengthen the prompt so Gemini ALWAYS produces output — even without page text
+  let prompt = `You are a helpful bookmark assistant. Write ONE short sentence (max 15 words) explaining why someone would save this page. You MUST always produce a sentence — never return empty. Base it on the title and URL if page content is unavailable.\nTitle: "${title}"\nURL: ${url}`
+  if (pageText && pageText.trim().length > 30) {
+    prompt += `\nPage snippet:\n${pageText.substring(0, 3000)}`
+  }
+  prompt += `\n\nRespond with ONLY the sentence. No intro, no quotes, no preamble.`
+
   try {
-    let prompt = `You are a bookmark assistant. Suggest in ONE short sentence (max 15 words) why someone saved this bookmark. Always provide an answer even if the page is unknown — base it on the title or URL.\nTitle: ${title}\nURL: ${url}`
-    if (pageText && pageText.trim().length > 30) {
-      prompt += `\nPage content snippet:\n${pageText.substring(0, 3000)}`
-    }
-    prompt += `\n\nRespond with ONLY the suggestion sentence. No intro, no quotes, no preamble.`
     return await callGemini(prompt, apiKey)
   } catch (err) {
     if ((err as Error).message === 'RATE_LIMIT') return ''
-    console.error('[Gemini] suggestNote error:', err)
-    return ''
+    // Re-throw real errors (bad key, network, etc.) so caller can surface them
+    throw err
   }
 }
 

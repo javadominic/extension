@@ -24,18 +24,42 @@ export default function BookmarksPage() {
   const [syncing,       setSyncing]       = useState(false)
   const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
 
+  const [pendingEditId, setPendingEditId] = useState<string | null>(null)
+
   useEffect(() => {
+    // 0. Load bookmarks from cache immediately
+    import('../../lib/storage').then(({ getCachedBookmarks }) => {
+      getCachedBookmarks().then(setBookmarks)
+    })
+
+    // 1. Initial check for pending edit
     import('../../lib/storage').then(({ getAndClearPendingEdit }) => {
-      getCachedBookmarks().then(async (data) => {
-        setBookmarks(data)
-        const pendingId = await getAndClearPendingEdit()
-        if (pendingId) {
-          const bm = data.find((b) => b.id === pendingId)
-          if (bm) setEditing(bm)
-        }
+      getAndClearPendingEdit().then(id => {
+        if (id) setPendingEditId(id)
       })
     })
+
+    // 2. Listen to storage changes while popup is open
+    function onStorageChange(changes: Record<string, chrome.storage.StorageChange>, area: string) {
+      if (area === 'local' && changes.pending_edit?.newValue) {
+        setPendingEditId(changes.pending_edit.newValue as string)
+        chrome.storage.local.remove('pending_edit')
+      }
+    }
+    chrome.storage.onChanged.addListener(onStorageChange)
+    return () => chrome.storage.onChanged.removeListener(onStorageChange)
   }, [])
+
+  // 3. Process the edit id whenever bookmarks or pendingEditId changes
+  useEffect(() => {
+    if (pendingEditId && bookmarks.length > 0) {
+      const bm = bookmarks.find(b => b.id === pendingEditId)
+      if (bm) {
+        setEditing(bm)
+        setPendingEditId(null) // Clear it once handled
+      }
+    }
+  }, [pendingEditId, bookmarks])
 
   // Collect all unique tags
   const allTags = useMemo(() => {
