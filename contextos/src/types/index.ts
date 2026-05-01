@@ -76,6 +76,7 @@ export type MessageType =
   | 'VALIDATE_GEMINI_KEY'
   | 'START_AI_SYNC'
   | 'AI_SYNC_PROGRESS'
+  | 'MARK_ALIVE'
 
 export interface ChromeMessage {
   type: MessageType

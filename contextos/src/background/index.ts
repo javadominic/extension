@@ -212,6 +212,26 @@ chrome.runtime.onMessage.addListener(
             break
           }
 
+          case 'MARK_ALIVE': {
+            const { id } = message.payload as { id: string }
+            const all = await getCachedBookmarks()
+            const bm = all.find(b => b.id === id)
+            if (bm) {
+              bm.health = 'alive'
+              await upsertBookmark(bm)
+              
+              const settings = await getSettings()
+              if (settings.firebaseUid) {
+                try {
+                  const db = getDb()
+                  await setDoc(doc(db, 'bookmarks', settings.firebaseUid, 'items', bm.id), bm, { merge: true })
+                } catch (e) {}
+              }
+            }
+            sendResponse({ success: true })
+            break
+          }
+
           case 'SAVE_NOTE': {
             const { id, note, tags, uid } = message.payload as {
               id: string

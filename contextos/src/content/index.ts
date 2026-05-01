@@ -361,6 +361,10 @@ function init() {
     const match = bookmarks.find((b) => urlsMatch(b.url, currentUrl))
     
     if (match) {
+      if (match.health !== 'alive') {
+        chrome.runtime.sendMessage({ type: 'MARK_ALIVE', payload: { id: match.id } })
+      }
+
       if (match.note) {
         const isDefault = match.note.startsWith('Interesting ') || match.note.startsWith('Saved for ')
         if (!isDefault) {
