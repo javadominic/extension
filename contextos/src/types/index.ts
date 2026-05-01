@@ -74,6 +74,8 @@ export type MessageType =
   | 'BUILD_GRAPH'
   | 'SUGGEST_NOTE'
   | 'VALIDATE_GEMINI_KEY'
+  | 'START_AI_SYNC'
+  | 'AI_SYNC_PROGRESS'
 
 export interface ChromeMessage {
   type: MessageType

@@ -14,7 +14,6 @@ import {
   removeBookmark,
   getSettings,
 } from './storage'
-import { suggestNote, autoTag } from './gemini'
 import type { BrainBookmark } from '../types'
 
 function domainFromUrl(url: string): string {
@@ -77,10 +76,6 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
         bm.health = existingBm.health
       }
 
-      if (settings.geminiApiKey && !bm.note) {
-        bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey)
-        bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey)
-      }
       return bm
     })
   )

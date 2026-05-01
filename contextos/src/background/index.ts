@@ -128,6 +128,70 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   await checkAllBookmarks(bookmarks, settings.firebaseUid)
 })
 
+let aiQueue: BrainBookmark[] = []
+let isAiSyncing = false
+let totalAiQueueSize = 0
+
+async function processAiQueue() {
+  if (isAiSyncing) return
+  isAiSyncing = true
+
+  const settings = await getSettings()
+  const apiKey = settings.geminiApiKey
+  
+  if (!apiKey) {
+    aiQueue = []
+    isAiSyncing = false
+    return
+  }
+
+  while (aiQueue.length > 0) {
+    const bm = aiQueue.shift()!
+    const currentNum = totalAiQueueSize - aiQueue.length
+    
+    chrome.runtime.sendMessage({ 
+      type: 'AI_SYNC_PROGRESS', 
+      payload: { current: currentNum, total: totalAiQueueSize, bookmark: null } 
+    }).catch(() => {})
+
+    try {
+      const note = await suggestNote(bm.url, bm.title, apiKey)
+      const tags = await autoTag(bm.url, bm.title, note, apiKey)
+
+      bm.note = note
+      bm.tags = tags
+
+      await upsertBookmark(bm)
+      
+      if (settings.firebaseUid) {
+         try {
+           const db = getDb()
+           await setDoc(doc(db, 'bookmarks', settings.firebaseUid, 'items', bm.id), bm, { merge: true })
+         } catch (e) {}
+      }
+
+      chrome.runtime.sendMessage({ 
+        type: 'AI_SYNC_PROGRESS', 
+        payload: { current: currentNum, total: totalAiQueueSize, bookmark: bm } 
+      }).catch(() => {})
+
+    } catch (e) {
+      console.warn(`Failed to generate AI content for ${bm.title}`, e)
+    }
+
+    if (aiQueue.length > 0) {
+      await new Promise(r => setTimeout(r, 8000))
+    }
+  }
+
+  totalAiQueueSize = 0
+  isAiSyncing = false
+  chrome.runtime.sendMessage({ 
+    type: 'AI_SYNC_PROGRESS', 
+    payload: { current: totalAiQueueSize, total: totalAiQueueSize, done: true } 
+  }).catch(() => {})
+}
+
 chrome.runtime.onMessage.addListener(
   (message: ChromeMessage, _sender, sendResponse: (r: ChromeResponse) => void) => {
     ;(async () => {
@@ -136,6 +200,15 @@ chrome.runtime.onMessage.addListener(
           case 'GET_BOOKMARKS': {
             const data = await getCachedBookmarks()
             sendResponse({ success: true, data })
+            break
+          }
+
+          case 'START_AI_SYNC': {
+            const { bookmarks } = message.payload as { bookmarks: BrainBookmark[] }
+            aiQueue.push(...bookmarks)
+            totalAiQueueSize += bookmarks.length
+            processAiQueue()
+            sendResponse({ success: true })
             break
           }
 

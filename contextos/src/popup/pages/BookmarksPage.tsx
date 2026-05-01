@@ -23,6 +23,7 @@ export default function BookmarksPage() {
   const [editing,       setEditing]       = useState<BrainBookmark | null>(null)
   const [syncing,       setSyncing]       = useState(false)
   const [toast,         setToast]         = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [aiProgress,    setAiProgress]    = useState<{ current: number; total: number; done?: boolean } | null>(null)
 
   const [pendingEditId, setPendingEditId] = useState<string | null>(null)
 
@@ -61,6 +62,27 @@ export default function BookmarksPage() {
     }
   }, [pendingEditId, bookmarks])
 
+  // 4. Listen to AI Progress from background worker
+  useEffect(() => {
+    function onMessage(msg: any) {
+      if (msg.type === 'AI_SYNC_PROGRESS') {
+        const { current, total, bookmark, done } = msg.payload
+        if (done) {
+          setAiProgress(null)
+          return
+        }
+        setAiProgress({ current, total })
+        
+        // Instantly patch the specific bookmark in the UI if we got the result back
+        if (bookmark) {
+          setBookmarks(prev => prev.map(b => b.id === bookmark.id ? bookmark : b))
+        }
+      }
+    }
+    chrome.runtime.onMessage.addListener(onMessage)
+    return () => chrome.runtime.onMessage.removeListener(onMessage)
+  }, [])
+
   // Collect all unique tags
   const allTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -82,6 +104,12 @@ export default function BookmarksPage() {
       const settings = await getSettings()
       const synced = await syncChromeBookmarks(settings.firebaseUid ?? '')
       setBookmarks(synced)
+      
+      const missingNotes = synced.filter(b => !b.note)
+      if (missingNotes.length > 0 && settings.geminiApiKey) {
+        chrome.runtime.sendMessage({ type: 'START_AI_SYNC', payload: { bookmarks: missingNotes } })
+      }
+      
       setToast({ msg: `Synced ${synced.length} bookmarks!`, type: 'success' })
     } catch (err) {
       setToast({ msg: `Sync failed: ${(err as Error).message}`, type: 'error' })
@@ -139,6 +167,21 @@ export default function BookmarksPage() {
 
       {/* Top bar */}
       <div className="px-3 pt-3 pb-2 border-b border-surface-border space-y-2">
+        {/* AI Progress Indicator */}
+        {aiProgress && (
+          <div className="flex items-center justify-between bg-primary-500/10 border border-primary-500/20 rounded-lg px-3 py-1.5 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-primary-300 font-medium tracking-tight">
+                ✨ AI generating notes...
+              </span>
+            </div>
+            <span className="text-xs font-bold text-primary-400">
+              {aiProgress.current} / {aiProgress.total}
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <span className="text-xs text-slate-500 font-medium">{bookmarks.length} bookmarks</span>
           <div className="flex items-center gap-2">
@@ -163,7 +206,7 @@ export default function BookmarksPage() {
         </div>
 
         {/* Health filter */}
-        <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar">
           {HEALTH_FILTERS.map((f) => (
             <button
               key={f.id}
@@ -182,7 +225,7 @@ export default function BookmarksPage() {
 
         {/* Tag filter pills */}
         {allTags.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+          <div className="flex gap-1.5 overflow-x-auto pb-2 pt-1 no-scrollbar">
             {allTags.map((tag) => (
               <TagBadge
                 key={tag}
