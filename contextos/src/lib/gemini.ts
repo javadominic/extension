@@ -1,7 +1,7 @@
 import type { BrainBookmark } from '../types'
 
 const BASE_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
 async function callGemini(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch(`${BASE_URL}?key=${apiKey}`, {

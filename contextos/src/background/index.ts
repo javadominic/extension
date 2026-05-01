@@ -291,7 +291,7 @@ chrome.runtime.onMessage.addListener(
             const { key } = message.payload as { key: string }
             try {
               const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
                 {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
@@ -301,11 +301,29 @@ chrome.runtime.onMessage.addListener(
                   }),
                 }
               )
+              
               if (res.ok || res.status === 400) {
-                // 400 = bad request body but key is valid; 200 = fully valid
                 sendResponse({ success: true })
-              } else if (res.status === 400) {
-                sendResponse({ success: true })
+              } else if (res.status === 404) {
+                // If model not found, query the API to see what models THIS key actually has access to!
+                try {
+                  const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
+                  const listData = await listRes.json()
+                  const available = (listData.models || [])
+                    .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
+                    .map((m: any) => m.name.replace('models/', ''))
+                    
+                  if (available.length > 0) {
+                    sendResponse({ 
+                      success: false, 
+                      error: `Model not found. Your key supports these models: ${available.join(', ')}` 
+                    })
+                  } else {
+                    sendResponse({ success: false, error: 'Your API key does not support any text generation models.' })
+                  }
+                } catch (e) {
+                  sendResponse({ success: false, error: 'Model not found, and failed to list available models.' })
+                }
               } else if (res.status === 403 || res.status === 401) {
                 sendResponse({ success: false, error: 'Invalid API key — check it in Google AI Studio.' })
               } else if (res.status === 429) {
