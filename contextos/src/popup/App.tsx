@@ -1,17 +1,19 @@
 import { useState, useEffect } from 'react'
 import SearchPage    from './pages/SearchPage'
 import BookmarksPage from './pages/BookmarksPage'
+import GraphPage     from './pages/GraphPage'
 import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
 import { getSettings } from '../lib/storage'
 
-type Tab = 'search' | 'bookmarks' | 'teams' | 'settings'
+type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'search',    label: 'Search',    icon: '🔍' },
-  { id: 'bookmarks', label: 'Saves',     icon: '🔖' },
-  { id: 'teams',     label: 'Teams',     icon: '👥' },
-  { id: 'settings',  label: 'Settings',  icon: '⚙️'  },
+  { id: 'search',    label: 'Search',  icon: '🔍' },
+  { id: 'bookmarks', label: 'Saves',   icon: '🔖' },
+  { id: 'graph',     label: 'Graph',   icon: '🕸️'  },
+  { id: 'teams',     label: 'Teams',   icon: '👥' },
+  { id: 'settings',  label: 'Settings',icon: '⚙️'  },
 ]
 
 export default function App() {
@@ -61,6 +63,7 @@ export default function App() {
       <main className="flex-1 overflow-hidden">
         {activeTab === 'search'    && <SearchPage />}
         {activeTab === 'bookmarks' && <BookmarksPage />}
+        {activeTab === 'graph'     && <GraphPage />}
         {activeTab === 'teams'     && <TeamsPage />}
         {activeTab === 'settings'  && <SettingsPage />}
       </main>

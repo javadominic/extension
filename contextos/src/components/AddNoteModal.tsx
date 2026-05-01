@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
 import TagBadge from './TagBadge'
-import { suggestNote, autoTag } from '../lib/gemini'
-import { getSettings } from '../lib/storage'
 
 interface Props {
   bookmark: BrainBookmark
@@ -35,25 +33,30 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
     setLoading(true)
     setAiError('')
     try {
-      const settings = await getSettings()
-      if (!settings.geminiApiKey) {
-        setAiError('Add your Gemini API key in Settings to use AI suggestions.')
+      // Route through the background service worker — the popup cannot call
+      // external APIs directly due to Manifest V3 CSP restrictions.
+      const response = await chrome.runtime.sendMessage({
+        type: 'SUGGEST_NOTE',
+        payload: { url: bookmark.url, title: bookmark.title },
+      })
+
+      if (!response?.success) {
+        // Surface the real error from the background so users know what went wrong
+        if (response?.error === 'NO_KEY') {
+          setAiError('Add your Gemini API key in Settings → AI tab.')
+        } else if (response?.error === 'EMPTY') {
+          setAiError('Gemini returned an empty suggestion — try again or write your own note.')
+        } else {
+          setAiError(`AI error: ${response?.error ?? 'Unknown. Check your API key in Settings.'}`)
+        }
         return
       }
 
-      const textRes = await chrome.runtime.sendMessage({ type: 'GET_PAGE_TEXT' })
-      const pageText = (textRes?.success && textRes.data) ? textRes.data as string : ''
-
-      const suggested = await suggestNote(bookmark.url, bookmark.title, settings.geminiApiKey, pageText)
-
-      if (!suggested || suggested.trim().length === 0) {
-        setAiError('AI couldn\'t generate a suggestion for this page.')
-        return
-      }
-
-      const newTags = await autoTag(bookmark.url, bookmark.title, suggested, settings.geminiApiKey, pageText)
+      const { note: suggested, tags: newTags } = response.data as { note: string; tags: string[] }
       setNewNote((prev) => prev.trim() ? `${prev.trim()} ${suggested}` : suggested)
-      setTags(newTags)
+      setTags(newTags ?? [])
+    } catch (err) {
+      setAiError(`Failed to reach background worker: ${(err as Error).message}`)
     } finally {
       setLoading(false)
     }

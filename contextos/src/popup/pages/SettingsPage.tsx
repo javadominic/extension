@@ -15,6 +15,8 @@ export default function SettingsPage() {
   const [showImport,   setShowImport]   = useState(false)
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [apiKeyVisible, setApiKeyVisible] = useState(false)
+  const [keyStatus,    setKeyStatus]    = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle')
+  const [keyError,     setKeyError]     = useState('')
 
   useEffect(() => {
     getSettings().then(setSettings)
@@ -38,6 +40,32 @@ export default function SettingsPage() {
     await saveSettings(updated)
     // Apply theme immediately if it changed
     if (patch.theme) applyTheme(patch.theme)
+    // If the API key changed, reset validation status
+    if ('geminiApiKey' in patch) {
+      setKeyStatus('idle')
+      setKeyError('')
+    }
+  }
+
+  async function validateKey() {
+    if (!settings.geminiApiKey.trim()) return
+    setKeyStatus('checking')
+    setKeyError('')
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'VALIDATE_GEMINI_KEY',
+        payload: { key: settings.geminiApiKey.trim() },
+      })
+      if (res?.success) {
+        setKeyStatus('valid')
+      } else {
+        setKeyStatus('invalid')
+        setKeyError(res?.error ?? 'Unknown error.')
+      }
+    } catch (e) {
+      setKeyStatus('invalid')
+      setKeyError(`Could not reach background: ${(e as Error).message}`)
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -147,8 +175,38 @@ export default function SettingsPage() {
             {apiKeyVisible ? '🙈' : '👁️'}
           </button>
         </div>
+        {/* Validation row */}
         {settings.geminiApiKey && (
-          <p className="text-[10px] text-emerald-400">✓ Key saved — AI features enabled</p>
+          <div className="flex items-center gap-2">
+            <button
+              id="test-gemini-key-btn"
+              onClick={validateKey}
+              disabled={keyStatus === 'checking'}
+              className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-surface-border text-slate-400 hover:text-slate-200 hover:border-slate-600 transition-all disabled:opacity-50"
+            >
+              {keyStatus === 'checking' ? (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-2.5 h-2.5 border border-slate-400 border-t-transparent rounded-full animate-spin" />
+                  Testing…
+                </span>
+              ) : '🔌 Test Key'}
+            </button>
+
+            {keyStatus === 'valid' && (
+              <span className="text-[10px] text-emerald-400 font-medium">✓ Key is valid — AI ready</span>
+            )}
+            {keyStatus === 'invalid' && (
+              <span className="text-[10px] text-red-400 font-medium">✗ Invalid key</span>
+            )}
+            {keyStatus === 'idle' && (
+              <span className="text-[10px] text-slate-600">Key saved — tap to verify</span>
+            )}
+          </div>
+        )}
+
+        {/* Show detailed error below */}
+        {keyStatus === 'invalid' && keyError && (
+          <p className="text-[10px] text-red-400/80 leading-snug">{keyError}</p>
         )}
       </section>
 

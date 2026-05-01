@@ -258,6 +258,63 @@ chrome.runtime.onMessage.addListener(
             break
           }
 
+          case 'SUGGEST_NOTE': {
+            // All Gemini fetch() calls must go through the background worker.
+            // The popup is blocked by CSP from calling external APIs directly.
+            const { url: snUrl, title: snTitle } = message.payload as {
+              url: string; title: string
+            }
+            const settings = await getSettings()
+            if (!settings.geminiApiKey) {
+              sendResponse({ success: false, error: 'NO_KEY' })
+              break
+            }
+            const pageText = await getActiveTabText()
+            const note = await suggestNote(snUrl, snTitle, settings.geminiApiKey, pageText)
+            if (!note) {
+              sendResponse({ success: false, error: 'EMPTY' })
+              break
+            }
+            const tags = await autoTag(snUrl, snTitle, note, settings.geminiApiKey, pageText)
+            sendResponse({ success: true, data: { note, tags } })
+            break
+          }
+
+          case 'VALIDATE_GEMINI_KEY': {
+            // Actually ping the Gemini API with the provided key and return the real error.
+            const { key } = message.payload as { key: string }
+            try {
+              const res = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+                {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    contents: [{ parts: [{ text: 'ping' }] }],
+                    generationConfig: { maxOutputTokens: 1 },
+                  }),
+                }
+              )
+              if (res.ok || res.status === 400) {
+                // 400 = bad request body but key is valid; 200 = fully valid
+                sendResponse({ success: true })
+              } else if (res.status === 400) {
+                sendResponse({ success: true })
+              } else if (res.status === 403 || res.status === 401) {
+                sendResponse({ success: false, error: 'Invalid API key — check it in Google AI Studio.' })
+              } else if (res.status === 429) {
+                sendResponse({ success: false, error: 'Rate limit hit — key is valid but quota exceeded.' })
+              } else {
+                const body = await res.json().catch(() => ({}))
+                const msg = (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`
+                sendResponse({ success: false, error: msg })
+              }
+            } catch (e) {
+              sendResponse({ success: false, error: `Network error: ${String(e)}` })
+            }
+            break
+          }
+
           default:
             sendResponse({ success: false, error: 'Unknown message type' })
         }

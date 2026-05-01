@@ -12,6 +12,36 @@ export interface BrainBookmark {
   uid: string
 }
 
+export interface GraphNode {
+  id: string                 // bookmark id
+  x: number
+  y: number
+  radius: number             // scaled by connection count
+  clusterId: string
+  bookmark: BrainBookmark
+}
+
+export interface GraphEdge {
+  source: string             // node id
+  target: string             // node id
+  sharedTags: string[]
+}
+
+export interface BookmarkCluster {
+  id: string                 // dominant tag name
+  label: string              // display label
+  color: string              // hex color
+  nodeIds: string[]          // bookmark ids in this cluster
+}
+
+export interface GraphData {
+  nodes: GraphNode[]
+  edges: GraphEdge[]
+  clusters: BookmarkCluster[]
+  width: number
+  height: number
+}
+
 export interface TeamData {
   id: string
   name: string
@@ -41,6 +71,9 @@ export type MessageType =
   | 'SIGN_IN'
   | 'OPEN_POPUP'
   | 'SAVE_NEW_PAGE_WITH_NOTE'
+  | 'BUILD_GRAPH'
+  | 'SUGGEST_NOTE'
+  | 'VALIDATE_GEMINI_KEY'
 
 export interface ChromeMessage {
   type: MessageType
