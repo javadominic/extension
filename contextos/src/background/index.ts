@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, doc, setDoc, deleteDoc, getDoc, getDocs, collection, addDoc, serverTimestamp, updateDoc, arrayUnion } from 'firebase/firestore'
+import { getFirestore, doc, setDoc, deleteDoc, getDoc, getDocs, collection, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import { suggestNote, autoTag } from '../lib/gemini'
 import { getActiveTabText } from '../lib/pageText'
@@ -424,6 +424,20 @@ chrome.runtime.onMessage.addListener(
               const snap = await getDocs(collection(db, 'teams', teamId, 'shared'))
               const items = snap.docs.map(d => ({ ...d.data(), id: d.id }))
               sendResponse({ success: true, data: items })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
+          case 'UNSHARE_BOOKMARK': {
+            try {
+              const { bookmarkId, teamId } = message.payload as { bookmarkId: string; teamId: string }
+              await deleteDoc(doc(db, 'teams', teamId, 'shared', bookmarkId))
+              await updateDoc(doc(db, 'teams', teamId), {
+                sharedBookmarks: arrayRemove(bookmarkId),
+              })
+              sendResponse({ success: true })
             } catch (err: any) {
               sendResponse({ success: false, error: err.message })
             }

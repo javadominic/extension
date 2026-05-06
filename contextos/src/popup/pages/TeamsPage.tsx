@@ -121,6 +121,25 @@ export default function TeamsPage() {
     setToast({ msg: 'Left team.', type: 'success' })
   }
 
+  async function handleUnshare(bookmarkId: string) {
+    if (!activeTeam) return
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'UNSHARE_BOOKMARK',
+        payload: { bookmarkId, teamId: activeTeam.id }
+      })
+      if (!res?.success) throw new Error(res?.error || 'Unknown error')
+      setSharedBms(prev => prev.filter(b => b.id !== bookmarkId))
+      setActiveTeam(prev => prev ? { ...prev, sharedBookmarks: prev.sharedBookmarks.filter(id => id !== bookmarkId) } : prev)
+      setTeams(prev => prev.map(t =>
+        t.id === activeTeam.id ? { ...t, sharedBookmarks: t.sharedBookmarks.filter(id => id !== bookmarkId) } : t
+      ))
+      setToast({ msg: 'Bookmark unshared.', type: 'success' })
+    } catch (err) {
+      setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
+    }
+  }
+
   async function handleShareBookmark(bm: BrainBookmark) {
     if (!activeTeam || !settings?.firebaseUid) return
     try {
@@ -221,12 +240,24 @@ export default function TeamsPage() {
               )}
               {sharedBms.map((bm: any) => (
                 <div key={bm.id} className="glass-card p-2.5">
-                  <p className="text-xs font-semibold text-slate-200 truncate">{bm.title}</p>
-                  <p className="text-[10px] text-slate-500 truncate mb-1">{bm.note || bm.url}</p>
-                  <a href={bm.url} target="_blank" rel="noreferrer"
-                    className="text-[10px] text-primary-400 hover:text-primary-300 truncate block">
-                    {bm.url}
-                  </a>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-200 truncate">{bm.title}</p>
+                      <p className="text-[10px] text-slate-500 truncate mb-1">{bm.note || bm.url}</p>
+                      <a href={bm.url} target="_blank" rel="noreferrer"
+                        className="text-[10px] text-primary-400 hover:text-primary-300 truncate block">
+                        {bm.url}
+                      </a>
+                    </div>
+                    {bm.addedBy === settings?.firebaseUid && (
+                      <button
+                        onClick={() => handleUnshare(bm.id)}
+                        className="flex-shrink-0 text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-0.5 rounded-lg transition-all"
+                      >
+                        Unshare
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </>
