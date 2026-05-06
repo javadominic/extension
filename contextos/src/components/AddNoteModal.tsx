@@ -41,11 +41,18 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
       })
 
       if (!response?.success) {
-        // Surface the real error from the background so users know what went wrong
         if (response?.error === 'NO_KEY') {
           setAiError('Add your Gemini API key in Settings → AI tab.')
         } else if (response?.error === 'EMPTY') {
           setAiError('Gemini returned an empty suggestion — try again or write your own note.')
+        } else if (typeof response?.error === 'string' && response.error.startsWith('RATE_LIMIT')) {
+          const seconds = parseInt(response.error.split(':')[1] ?? '60', 10)
+          const minutes = Math.ceil(seconds / 60)
+          setAiError(
+            minutes > 1
+              ? `⏳ Gemini rate limit hit — free tier allows ~60 requests/min. Try again in ~${minutes} minutes.`
+              : `⏳ Gemini rate limit hit — try again in ~${seconds} seconds.`
+          )
         } else {
           setAiError(`AI error: ${response?.error ?? 'Unknown. Check your API key in Settings.'}`)
         }

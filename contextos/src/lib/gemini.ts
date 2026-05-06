@@ -14,7 +14,8 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
   })
 
   if (response.status === 429) {
-    throw new Error('RATE_LIMIT')
+    const retryAfter = response.headers.get('Retry-After') ?? '60'
+    throw new Error(`RATE_LIMIT:${retryAfter}`)
   }
   if (!response.ok) {
     throw new Error(`Gemini API error: ${response.status}`)
@@ -57,8 +58,7 @@ export async function suggestNote(
   try {
     return await callGemini(prompt, apiKey)
   } catch (err) {
-    if ((err as Error).message === 'RATE_LIMIT') return ''
-    // Re-throw real errors (bad key, network, etc.) so caller can surface them
+    // Re-throw everything including RATE_LIMIT so background can forward it
     throw err
   }
 }

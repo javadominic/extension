@@ -136,10 +136,13 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
 
   if (settings.geminiApiKey) {
     const pageText = await getActiveTabText()
-
-    bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey, pageText)
-    bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
-    // Update cache with AI notes
+    try {
+      bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey, pageText)
+      bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
+    } catch {
+      // Rate limited or API error — bookmark saved without AI note
+    }
+    // Update cache with AI notes (or skeleton if AI failed)
     await upsertBookmark(bm)
   }
 
@@ -211,6 +214,7 @@ async function processAiQueue() {
 
     try {
       const note = await suggestNote(bm.url, bm.title, apiKey)
+        .catch(() => '')  // silent fallback on rate limit / error
       const tags = await autoTag(bm.url, bm.title, note, apiKey)
 
       bm.note = note
@@ -541,8 +545,15 @@ chrome.runtime.onMessage.addListener(
             let note: string
             try {
               note = await suggestNote(snUrl, snTitle, settings.geminiApiKey, pageText)
-            } catch (geminiErr) {
-              sendResponse({ success: false, error: String(geminiErr) })
+            } catch (geminiErr: any) {
+              const msg = String(geminiErr)
+              if (msg.includes('RATE_LIMIT')) {
+                const match = msg.match(/RATE_LIMIT:(\d+)/)
+                const seconds = match?.[1] ?? '60'
+                sendResponse({ success: false, error: `RATE_LIMIT:${seconds}` })
+              } else {
+                sendResponse({ success: false, error: msg })
+              }
               break
             }
             if (!note) {
