@@ -53,7 +53,8 @@ export interface AppSettings {
   geminiApiKey: string
   toastEnabled: boolean
   theme: 'light' | 'dark' | 'system'
-  teamId?: string
+  teamId?: string      // kept for backward compat
+  teamIds?: string[]   // multi-team support
   firebaseUid?: string
 }
 

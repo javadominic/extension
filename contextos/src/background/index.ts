@@ -374,6 +374,18 @@ chrome.runtime.onMessage.addListener(
             break
           }
 
+          case 'GET_TEAM': {
+            try {
+              const { teamId } = message.payload as { teamId: string }
+              const snap = await getDoc(doc(db, 'teams', teamId))
+              if (!snap.exists()) throw new Error('Team not found')
+              sendResponse({ success: true, data: { id: snap.id, ...snap.data() } })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
           case 'JOIN_TEAM': {
             try {
               const { joinCode, uid } = message.payload as { joinCode: string; uid: string }
