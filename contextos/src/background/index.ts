@@ -40,12 +40,40 @@ function getDb() {
 
 async function signInWithGoogle(): Promise<string | null> {
   return new Promise((resolve) => {
-    chrome.identity.getAuthToken({ interactive: true }, async (token) => {
-      if (chrome.runtime.lastError || !token) {
+    const manifest = chrome.runtime.getManifest()
+    const clientId = manifest.oauth2?.client_id
+    if (!clientId) {
+      console.warn('OAuth2 client_id not found in manifest.json')
+      resolve(null)
+      return
+    }
+
+    const redirectUri = chrome.identity.getRedirectURL()
+    const scopes = manifest.oauth2?.scopes?.join(' ') || 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`
+
+    chrome.identity.launchWebAuthFlow({
+      url: authUrl,
+      interactive: true
+    }, async (redirectUrl) => {
+      if (chrome.runtime.lastError || !redirectUrl) {
+        console.warn('launchWebAuthFlow error:', chrome.runtime.lastError?.message)
         resolve(null)
         return
       }
+
       try {
+        const urlObj = new URL(redirectUrl)
+        const params = new URLSearchParams(urlObj.hash.substring(1))
+        const token = params.get('access_token')
+
+        if (!token) {
+          console.warn('No access_token found in redirect URI hash')
+          resolve(null)
+          return
+        }
+
         const app = initializeApp(firebaseConfig, `bg_auth_${Date.now()}`)
         const auth = getAuth(app)
         const credential = GoogleAuthProvider.credential(null, token)
@@ -53,7 +81,8 @@ async function signInWithGoogle(): Promise<string | null> {
         const idToken = await result.user.getIdToken()
         await saveFirebaseToken(idToken)
         resolve(result.user.uid)
-      } catch {
+      } catch (err) {
+        console.error('Firebase Auth error during launchWebAuthFlow:', err)
         resolve(null)
       }
     })
