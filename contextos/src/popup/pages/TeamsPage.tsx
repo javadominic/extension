@@ -13,10 +13,12 @@ export default function TeamsPage() {
   const [bookmarks,    setBookmarks]    = useState<BrainBookmark[]>([])
   const [sharedBms,    setSharedBms]    = useState<any[]>([])
   const [loadingShared,setLoadingShared]= useState(false)
+  const [members,      setMembers]      = useState<any[]>([])
+  const [loadingMembers,setLoadingMembers]= useState(false)
   const [toast,        setToast]        = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const [copied,       setCopied]       = useState(false)
   const [view,         setView]         = useState<'list' | 'detail' | 'add'>('list')
-  const [detailTab,    setDetailTab]    = useState<'share' | 'shared'>('shared')
+  const [detailTab,    setDetailTab]    = useState<'shared' | 'share' | 'members'>('shared')
 
   useEffect(() => {
     async function load() {
@@ -44,12 +46,19 @@ export default function TeamsPage() {
     setView('detail')
     setDetailTab('shared')
     setSharedBms([])
+    setMembers([])
     setLoadingShared(true)
+    setLoadingMembers(true)
     try {
-      const res = await chrome.runtime.sendMessage({ type: 'GET_SHARED_BOOKMARKS', payload: { teamId: t.id } })
-      if (res?.success) setSharedBms(res.data ?? [])
+      const [sharedRes, membersRes] = await Promise.all([
+        chrome.runtime.sendMessage({ type: 'GET_SHARED_BOOKMARKS', payload: { teamId: t.id } }),
+        chrome.runtime.sendMessage({ type: 'GET_TEAM_MEMBERS', payload: { memberIds: t.members } }),
+      ])
+      if (sharedRes?.success) setSharedBms(sharedRes.data ?? [])
+      if (membersRes?.success) setMembers(membersRes.data ?? [])
     } catch {}
     setLoadingShared(false)
+    setLoadingMembers(false)
   }
 
   async function handleCreateTeam() {
@@ -160,6 +169,25 @@ export default function TeamsPage() {
     }
   }
 
+  async function handleRemoveMember(memberId: string) {
+    if (!activeTeam) return
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'REMOVE_TEAM_MEMBER',
+        payload: { teamId: activeTeam.id, memberId }
+      })
+      if (!res?.success) throw new Error(res?.error || 'Unknown error')
+      setMembers(prev => prev.filter(m => m.uid !== memberId))
+      setActiveTeam(prev => prev ? { ...prev, members: prev.members.filter(id => id !== memberId) } : prev)
+      setTeams(prev => prev.map(t =>
+        t.id === activeTeam.id ? { ...t, members: t.members.filter(id => id !== memberId) } : t
+      ))
+      setToast({ msg: 'Member removed.', type: 'success' })
+    } catch (err) {
+      setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
+    }
+  }
+
   function handleCopyId() {
     if (!activeTeam?.id) return
     navigator.clipboard.writeText(activeTeam.id)
@@ -217,14 +245,14 @@ export default function TeamsPage() {
 
           {/* Tabs */}
           <div className="flex gap-1">
-            {(['shared', 'share'] as const).map(tab => (
+            {(['shared', 'members', 'share'] as const).map(tab => (
               <button key={tab} onClick={() => setDetailTab(tab)}
-                className={`flex-1 text-[11px] font-semibold py-1 rounded-lg transition-all ${
+                className={`flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all ${
                   detailTab === tab
                     ? 'bg-primary-600/30 text-primary-300 border border-primary-500/30'
                     : 'text-slate-500 hover:text-slate-300'
                 }`}>
-                {tab === 'shared' ? `📥 Shared by Team (${sharedBms.length})` : '📤 Share Yours'}
+                {tab === 'shared' ? `📥 Shared (${sharedBms.length})` : tab === 'members' ? `👥 Members (${activeTeam.members.length})` : '📤 Share'}
               </button>
             ))}
           </div>
@@ -286,6 +314,49 @@ export default function TeamsPage() {
                       }`}>
                       {isShared ? '✓ Shared' : 'Share'}
                     </button>
+                  </div>
+                )
+              })}
+            </>
+          )}
+
+          {detailTab === 'members' && (
+            <>
+              {loadingMembers && <p className="text-xs text-slate-500 text-center py-6">Loading members…</p>}
+              {!loadingMembers && members.map((m: any) => {
+                const isYou = m.uid === settings?.firebaseUid
+                const isCreator = activeTeam.members[0] === m.uid
+                return (
+                  <div key={m.uid} className="glass-card p-2.5 flex items-center gap-2.5">
+                    {/* Avatar */}
+                    {m.photoURL
+                      ? <img src={m.photoURL} className="w-8 h-8 rounded-full flex-shrink-0" alt="" />
+                      : <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-sm flex-shrink-0">
+                          {(m.displayName || m.email || '?')[0].toUpperCase()}
+                        </div>
+                    }
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-semibold text-slate-200 truncate">
+                          {m.displayName || m.email || m.uid.slice(0, 12) + '…'}
+                        </p>
+                        {isYou && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-300 border border-primary-500/30">You</span>}
+                        {isCreator && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Owner</span>}
+                      </div>
+                      {m.email && m.displayName && (
+                        <p className="text-[10px] text-slate-500 truncate">{m.email}</p>
+                      )}
+                    </div>
+                    {/* Remove — only show for others, owner can remove anyone */}
+                    {!isYou && (
+                      <button
+                        onClick={() => handleRemoveMember(m.uid)}
+                        className="flex-shrink-0 text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-0.5 rounded-lg transition-all"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 )
               })}

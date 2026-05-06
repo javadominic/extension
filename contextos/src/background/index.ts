@@ -82,6 +82,12 @@ async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
           google_id_token: id_token || null,
           google_access_token: access_token || null 
         })
+
+        // Save user profile to Firestore so teammates can see names
+        const { uid, displayName, email, photoURL } = result.user
+        try {
+          await setDoc(doc(db, 'users', uid), { uid, displayName, email, photoURL }, { merge: true })
+        } catch {}
         
         resolve({ uid: result.user.uid })
       } catch (err: any) {
@@ -424,6 +430,35 @@ chrome.runtime.onMessage.addListener(
               const snap = await getDocs(collection(db, 'teams', teamId, 'shared'))
               const items = snap.docs.map(d => ({ ...d.data(), id: d.id }))
               sendResponse({ success: true, data: items })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
+          case 'GET_TEAM_MEMBERS': {
+            try {
+              const { memberIds } = message.payload as { memberIds: string[] }
+              const profiles = await Promise.all(
+                memberIds.map(async uid => {
+                  try {
+                    const snap = await getDoc(doc(db, 'users', uid))
+                    return snap.exists() ? { uid, ...snap.data() } : { uid, displayName: null, email: null, photoURL: null }
+                  } catch { return { uid, displayName: null, email: null, photoURL: null } }
+                })
+              )
+              sendResponse({ success: true, data: profiles })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
+          case 'REMOVE_TEAM_MEMBER': {
+            try {
+              const { teamId, memberId } = message.payload as { teamId: string; memberId: string }
+              await updateDoc(doc(db, 'teams', teamId), { members: arrayRemove(memberId) })
+              sendResponse({ success: true })
             } catch (err: any) {
               sendResponse({ success: false, error: err.message })
             }

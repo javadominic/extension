@@ -84,6 +84,8 @@ export type MessageType =
   | 'GET_TEAM'
   | 'GET_SHARED_BOOKMARKS'
   | 'UNSHARE_BOOKMARK'
+  | 'GET_TEAM_MEMBERS'
+  | 'REMOVE_TEAM_MEMBER'
 
 export interface ChromeMessage {
   type: MessageType

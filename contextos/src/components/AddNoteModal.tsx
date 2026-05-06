@@ -79,10 +79,19 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
     onSave(joinNotes(allNotes), tags)
   }
 
+  const [tagInput, setTagInput] = useState('')
+
   function toggleTag(tag: string) {
     setTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     )
+  }
+
+  function addCustomTag() {
+    const t = tagInput.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!t || tags.includes(t)) { setTagInput(''); return }
+    setTags(prev => [...prev, t])
+    setTagInput('')
   }
 
   return (
@@ -168,16 +177,47 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
         )}
 
         {/* Tags */}
-        {tags.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-slate-500 mb-2 font-medium">Tags (tap to toggle)</p>
+        <div className="mb-4">
+          <p className="text-xs text-slate-500 mb-2 font-medium">Tags</p>
+
+          {/* Tag input */}
+          <div className="flex gap-1.5 mb-2">
+            <input
+              className="input-field flex-1 h-8 text-xs py-1"
+              placeholder="Add a tag and press Enter…"
+              value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
+            />
+            <button
+              onClick={addCustomTag}
+              disabled={!tagInput.trim()}
+              className="text-[11px] font-semibold text-primary-400 hover:text-primary-300 border border-primary-500/30 hover:border-primary-400/50 px-3 py-1 rounded-lg transition-all disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
+
+          {/* Tag pills — tap to remove */}
+          {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
-                <TagBadge key={tag} tag={tag} active onClick={() => toggleTag(tag)} />
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-300 border border-primary-500/25 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 transition-all group"
+                  title="Tap to remove"
+                >
+                  #{tag}
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">×</span>
+                </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+          {tags.length === 0 && (
+            <p className="text-[11px] text-slate-600 italic">No tags yet — add some above or use AI suggest</p>
+          )}
+        </div>
 
         {/* Actions */}
         <div className="flex gap-2">
