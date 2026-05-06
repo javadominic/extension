@@ -82,6 +82,7 @@ export type MessageType =
   | 'JOIN_TEAM'
   | 'SHARE_BOOKMARK'
   | 'GET_TEAM'
+  | 'GET_SHARED_BOOKMARKS'
 
 export interface ChromeMessage {
   type: MessageType

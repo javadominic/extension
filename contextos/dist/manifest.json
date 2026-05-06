@@ -5,6 +5,7 @@
   "description": "Smart bookmark memory assistant with AI. Save why you bookmarked something and never forget again.",
   "author": "Your Name",
   "homepage_url": "https://github.com/yourusername/contextos",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuMCBrT2xpiQNiylPu0Zb3oMq9jdN6RuBhpTtNMwmeUNmi3V8ZgPO7jwSGA7qryimOneYiuzhdI5SPck5o1oPabvwmHtkkmw/Jy0SuDBcWXtlpyU3OHWIzqFo5bavyWMXV33m/EShtvblJeQRiuGcEteROpcbkI0++pKSwtUEarrSMzofigBZZFUgPSCrLm/nXtLjhaPefI2i8XxEEg2wIXlkONzKrtTI/XysEUQFc3pLI39P4518Jj4NeIPO+L17lHlY2pClgdVxG3cWTAjDNPJna9HNmwSF7PaIIWyjAvEMUIQEX43QUq14y+0ZI5nsCCwQghstF/sgf/FqWWeZ/QIDAQAB",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
