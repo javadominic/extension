@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, doc, setDoc, deleteDoc } from 'firebase/firestore'
+import { getFirestore, doc, setDoc, deleteDoc, getDoc, collection, addDoc, serverTimestamp, updateDoc, arrayUnion } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import { suggestNote, autoTag } from '../lib/gemini'
 import { getActiveTabText } from '../lib/pageText'
@@ -16,28 +16,9 @@ import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
 import type { BrainBookmark, ChromeMessage, ChromeResponse } from '../types'
 
-// import.meta.env is not available at SW runtime — values inlined at build time by Vite
-const firebaseConfig = {
-  apiKey:            import.meta.env.VITE_FIREBASE_API_KEY            ?? 'AIzaSyBGTkNDcYZoYgmkDAiMA2jJ0y7UtIcxVMg',
-  authDomain:        import.meta.env.VITE_FIREBASE_AUTH_DOMAIN        ?? 'protfolio-b8314.firebaseapp.com',
-  projectId:         import.meta.env.VITE_FIREBASE_PROJECT_ID         ?? 'protfolio-b8314',
-  storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET     ?? 'protfolio-b8314.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? '367359110826',
-  appId:             import.meta.env.VITE_FIREBASE_APP_ID             ?? '1:367359110826:web:fad3760ce4a336c9862ad3',
-}
-
-let _app: ReturnType<typeof initializeApp> | null = null
-let _db: ReturnType<typeof getFirestore> | null = null
+import { db, auth } from '../lib/firebase'
 
 const skipGeminiForUrls = new Set<string>()
-
-function getDb() {
-  if (!_db) {
-    _app = initializeApp(firebaseConfig, 'background')
-    _db = getFirestore(_app)
-  }
-  return _db
-}
 
 async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
   return new Promise((resolve) => {
@@ -86,15 +67,22 @@ async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
           return
         }
 
-        const app = initializeApp(firebaseConfig, `bg_auth_${Date.now()}`)
-        const auth = getAuth(app)
-        
+        const id_token = params.get('id_token')
+        const access_token = params.get('access_token')
+
         // Pass the token as the access token (2nd param). If it was an id_token, this might fail, so we try both.
-        const credential = GoogleAuthProvider.credential(params.get('id_token') || null, params.get('access_token') || null)
+        const credential = GoogleAuthProvider.credential(id_token || null, access_token || null)
         
         const result = await signInWithCredential(auth, credential)
         const idToken = await result.user.getIdToken()
         await saveFirebaseToken(idToken)
+        
+        // Save the raw Google tokens so we can quickly re-auth the SW if it forgets
+        await chrome.storage.local.set({ 
+          google_id_token: id_token || null,
+          google_access_token: access_token || null 
+        })
+        
         resolve({ uid: result.user.uid })
       } catch (err: any) {
         console.error('Firebase Auth error during launchWebAuthFlow:', err)
@@ -102,6 +90,25 @@ async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
       }
     })
   })
+}
+
+async function ensureAuth() {
+  await auth.authStateReady()
+  if (auth.currentUser) return true
+
+  // SW forgot the session (IndexedDB failure). Re-hydrate from storage.
+  const data = await chrome.storage.local.get(['google_id_token', 'google_access_token'])
+  if (data.google_id_token || data.google_access_token) {
+    try {
+      const credential = GoogleAuthProvider.credential(data.google_id_token || null, data.google_access_token || null)
+      await signInWithCredential(auth, credential)
+      return true
+    } catch (e) {
+      console.error('ensureAuth failed to re-hydrate:', e)
+      return false
+    }
+  }
+  return false
 }
 
 chrome.bookmarks.onCreated.addListener(async (id, node) => {
@@ -132,7 +139,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
 
   if (uid) {
     try {
-      const db = getDb()
       await setDoc(doc(db, 'bookmarks', uid, 'items', bm.id), bm)
     } catch {}
   }
@@ -155,7 +161,6 @@ chrome.bookmarks.onRemoved.addListener(async (id) => {
 
   if (uid) {
     try {
-      const db = getDb()
       await deleteDoc(doc(db, 'bookmarks', uid, 'items', id))
     } catch {}
   }
@@ -209,7 +214,6 @@ async function processAiQueue() {
       
       if (settings.firebaseUid) {
          try {
-           const db = getDb()
            await setDoc(doc(db, 'bookmarks', settings.firebaseUid, 'items', bm.id), bm, { merge: true })
          } catch (e) {}
       }
@@ -267,7 +271,6 @@ chrome.runtime.onMessage.addListener(
               const settings = await getSettings()
               if (settings.firebaseUid) {
                 try {
-                  const db = getDb()
                   await setDoc(doc(db, 'bookmarks', settings.firebaseUid, 'items', bm.id), bm, { merge: true })
                 } catch (e) {}
               }
@@ -291,7 +294,6 @@ chrome.runtime.onMessage.addListener(
               await upsertBookmark(bm)
               if (uid) {
                 try {
-                  const db = getDb()
                   await setDoc(doc(db, 'bookmarks', uid, 'items', id), bm, { merge: true })
                 } catch {}
               }
@@ -312,7 +314,6 @@ chrome.runtime.onMessage.addListener(
               await upsertBookmark(bm)
               if (aUid) {
                 try {
-                  const db = getDb()
                   await setDoc(doc(db, 'bookmarks', aUid, 'items', aId), bm, { merge: true })
                 } catch {}
               }
@@ -356,6 +357,55 @@ chrome.runtime.onMessage.addListener(
             break
           }
 
+          case 'CREATE_TEAM': {
+            try {
+              const { teamName, uid } = message.payload as { teamName: string; uid: string }
+              const ref = await addDoc(collection(db, 'teams'), {
+                name: teamName,
+                members: [uid],
+                sharedBookmarks: [],
+                createdAt: serverTimestamp(),
+                createdBy: uid,
+              })
+              sendResponse({ success: true, data: ref.id })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
+          case 'JOIN_TEAM': {
+            try {
+              const { joinCode, uid } = message.payload as { joinCode: string; uid: string }
+              const ref = doc(db, 'teams', joinCode)
+              const snap = await getDoc(ref)
+              if (!snap.exists()) throw new Error('Team not found')
+              await updateDoc(ref, { members: arrayUnion(uid) })
+              const data = { id: snap.id, ...snap.data() }
+              sendResponse({ success: true, data })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
+          case 'SHARE_BOOKMARK': {
+            try {
+              const { bm, teamId, uid } = message.payload as { bm: any; teamId: string; uid: string }
+              await setDoc(
+                doc(db, 'teams', teamId, 'shared', bm.id),
+                { ...bm, addedBy: uid, addedAt: Date.now() }
+              )
+              await updateDoc(doc(db, 'teams', teamId), {
+                sharedBookmarks: arrayUnion(bm.id),
+              })
+              sendResponse({ success: true })
+            } catch (err: any) {
+              sendResponse({ success: false, error: err.message })
+            }
+            break
+          }
+
           case 'OPEN_POPUP': {
             // Opens the extension popup programmatically (MV3 workaround)
             await chrome.action.openPopup().catch(() => {})
@@ -395,7 +445,6 @@ chrome.runtime.onMessage.addListener(
               
               if (uid) {
                 try {
-                  const db = getDb()
                   await setDoc(doc(db, 'bookmarks', uid, 'items', node.id), bm)
                 } catch {}
               }

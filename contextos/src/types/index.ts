@@ -77,6 +77,10 @@ export type MessageType =
   | 'START_AI_SYNC'
   | 'AI_SYNC_PROGRESS'
   | 'MARK_ALIVE'
+  | 'CREATE_TEAM'
+  | 'JOIN_TEAM'
+  | 'SHARE_BOOKMARK'
+  | 'GET_TEAM'
 
 export interface ChromeMessage {
   type: MessageType

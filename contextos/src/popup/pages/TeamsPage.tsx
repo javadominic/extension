@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'
 import { getSettings, saveSettings, getCachedBookmarks } from '../../lib/storage'
-import {
-  doc, setDoc, getDoc, collection, addDoc, serverTimestamp, updateDoc, arrayUnion,
-} from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { doc, getDoc } from 'firebase/firestore'
 import type { BrainBookmark, AppSettings, TeamData } from '../../types'
 
 export default function TeamsPage() {
@@ -15,6 +13,7 @@ export default function TeamsPage() {
   const [loading,   setLoading]   = useState(false)
   const [bookmarks, setBookmarks] = useState<BrainBookmark[]>([])
   const [toast,     setToast]     = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+  const [copied,    setCopied]    = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -36,17 +35,16 @@ export default function TeamsPage() {
     if (!teamName.trim() || !settings?.firebaseUid) return
     setLoading(true)
     try {
-      const ref = await addDoc(collection(db, 'teams'), {
-        name: teamName.trim(),
-        members: [settings.firebaseUid],
-        sharedBookmarks: [],
-        createdAt: serverTimestamp(),
-        createdBy: settings.firebaseUid,
+      const res = await chrome.runtime.sendMessage({
+        type: 'CREATE_TEAM',
+        payload: { teamName: teamName.trim(), uid: settings.firebaseUid }
       })
-      const newSettings = { ...settings, teamId: ref.id }
+      if (!res?.success) throw new Error(res?.error || 'Unknown error')
+      const refId = res.data
+      const newSettings = { ...settings, teamId: refId }
       await saveSettings(newSettings)
       setSettings(newSettings)
-      setTeam({ id: ref.id, name: teamName.trim(), members: [settings.firebaseUid], sharedBookmarks: [] })
+      setTeam({ id: refId, name: teamName.trim(), members: [settings.firebaseUid], sharedBookmarks: [] })
       setToast({ msg: 'Team created!', type: 'success' })
     } catch (err) {
       setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
@@ -59,14 +57,16 @@ export default function TeamsPage() {
     if (!joinCode.trim() || !settings?.firebaseUid) return
     setLoading(true)
     try {
-      const ref = doc(db, 'teams', joinCode.trim())
-      const snap = await getDoc(ref)
-      if (!snap.exists()) throw new Error('Team not found')
-      await updateDoc(ref, { members: arrayUnion(settings.firebaseUid) })
+      const res = await chrome.runtime.sendMessage({
+        type: 'JOIN_TEAM',
+        payload: { joinCode: joinCode.trim(), uid: settings.firebaseUid }
+      })
+      if (!res?.success) throw new Error(res?.error || 'Unknown error')
+      
       const newSettings = { ...settings, teamId: joinCode.trim() }
       await saveSettings(newSettings)
       setSettings(newSettings)
-      setTeam({ id: snap.id, ...snap.data() } as TeamData)
+      setTeam(res.data as TeamData)
       setToast({ msg: 'Joined team!', type: 'success' })
     } catch (err) {
       setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
@@ -78,13 +78,15 @@ export default function TeamsPage() {
   async function handleShareBookmark(bm: BrainBookmark) {
     if (!settings?.teamId || !settings.firebaseUid) return
     try {
-      await setDoc(
-        doc(db, 'teams', settings.teamId, 'shared', bm.id),
-        { ...bm, addedBy: settings.firebaseUid, addedAt: Date.now() }
-      )
-      await updateDoc(doc(db, 'teams', settings.teamId), {
-        sharedBookmarks: arrayUnion(bm.id),
+      const res = await chrome.runtime.sendMessage({
+        type: 'SHARE_BOOKMARK',
+        payload: { bm, teamId: settings.teamId, uid: settings.firebaseUid }
       })
+      if (!res?.success) throw new Error(res?.error || 'Unknown error')
+      
+      if (team && team.id) {
+        setTeam({ ...team, id: team.id, sharedBookmarks: [...team.sharedBookmarks, bm.id] })
+      }
       setToast({ msg: 'Shared with team!', type: 'success' })
     } catch (err) {
       setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
@@ -162,25 +164,53 @@ export default function TeamsPage() {
   }
 
   // Team view
+  function handleCopyId() {
+    if (!team?.id) return
+    navigator.clipboard.writeText(team.id)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleLeaveTeam() {
+    const newSettings = { ...settings, teamId: undefined }
+    await saveSettings(newSettings as any)
+    setSettings(newSettings as any)
+    setTeam(null)
+    setToast({ msg: 'Left team.', type: 'success' })
+  }
+
   return (
     <div className="flex flex-col h-full">
       {toast && <Toast message={toast.msg} type={toast.type} onDismiss={() => setToast(null)} />}
 
       {/* Team header */}
       <div className="px-3 pt-3 pb-2 border-b border-surface-border">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mb-2">
           <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-lg">
             👥
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="font-bold text-slate-100 text-sm">{team.name}</p>
             <p className="text-xs text-slate-500">{team.members.length} member{team.members.length !== 1 ? 's' : ''}</p>
           </div>
-          <div className="ml-auto">
-            <div className="text-[10px] font-mono text-slate-600 bg-surface-border px-2 py-0.5 rounded">
-              ID: {team.id.slice(0, 8)}…
-            </div>
-          </div>
+          <button
+            onClick={handleLeaveTeam}
+            className="text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-1 rounded-lg transition-all"
+          >
+            Leave
+          </button>
+        </div>
+
+        {/* Full copyable team ID */}
+        <div className="flex items-center gap-2 bg-surface-border/50 rounded-lg px-2.5 py-1.5">
+          <p className="text-[10px] text-slate-500 flex-shrink-0">Team ID:</p>
+          <p className="text-[10px] font-mono text-slate-300 flex-1 truncate select-all">{team.id}</p>
+          <button
+            onClick={handleCopyId}
+            className="flex-shrink-0 text-[10px] font-semibold text-primary-400 hover:text-primary-300 transition-colors"
+          >
+            {copied ? '✓ Copied' : 'Copy'}
+          </button>
         </div>
       </div>
 
