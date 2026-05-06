@@ -10,6 +10,7 @@ import {
   removeBookmark,
   saveFirebaseToken,
   setPendingEdit,
+  saveSettings,
 } from '../lib/storage'
 import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
@@ -38,13 +39,13 @@ function getDb() {
   return _db
 }
 
-async function signInWithGoogle(): Promise<string | null> {
+async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
   return new Promise((resolve) => {
     const manifest = chrome.runtime.getManifest()
     const clientId = manifest.oauth2?.client_id
     if (!clientId) {
       console.warn('OAuth2 client_id not found in manifest.json')
-      resolve(null)
+      resolve({ error: 'OAuth2 client_id not found in manifest.json' })
       return
     }
 
@@ -59,31 +60,45 @@ async function signInWithGoogle(): Promise<string | null> {
     }, async (redirectUrl) => {
       if (chrome.runtime.lastError || !redirectUrl) {
         console.warn('launchWebAuthFlow error:', chrome.runtime.lastError?.message)
-        resolve(null)
+        resolve({ error: chrome.runtime.lastError?.message || 'launchWebAuthFlow failed' })
         return
       }
 
       try {
         const urlObj = new URL(redirectUrl)
-        const params = new URLSearchParams(urlObj.hash.substring(1))
-        const token = params.get('access_token')
+        
+        // Sometimes it's in the hash, sometimes it's in the search params
+        const paramsStr = urlObj.hash ? urlObj.hash.substring(1) : urlObj.search.substring(1)
+        const params = new URLSearchParams(paramsStr)
+        
+        const token = params.get('access_token') || params.get('id_token')
+        const errorMsg = params.get('error')
+
+        if (errorMsg) {
+          console.warn('OAuth Error:', errorMsg)
+          resolve({ error: `Google OAuth Error: ${errorMsg}` })
+          return
+        }
 
         if (!token) {
-          console.warn('No access_token found in redirect URI hash')
-          resolve(null)
+          console.warn('No token found in redirect URI:', redirectUrl)
+          resolve({ error: `No token found. URL: ${redirectUrl}` })
           return
         }
 
         const app = initializeApp(firebaseConfig, `bg_auth_${Date.now()}`)
         const auth = getAuth(app)
-        const credential = GoogleAuthProvider.credential(null, token)
+        
+        // Pass the token as the access token (2nd param). If it was an id_token, this might fail, so we try both.
+        const credential = GoogleAuthProvider.credential(params.get('id_token') || null, params.get('access_token') || null)
+        
         const result = await signInWithCredential(auth, credential)
         const idToken = await result.user.getIdToken()
         await saveFirebaseToken(idToken)
-        resolve(result.user.uid)
-      } catch (err) {
+        resolve({ uid: result.user.uid })
+      } catch (err: any) {
         console.error('Firebase Auth error during launchWebAuthFlow:', err)
-        resolve(null)
+        resolve({ error: `Firebase Error: ${err?.message || 'Unknown Auth Error'}` })
       }
     })
   })
@@ -327,8 +342,17 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'SIGN_IN': {
-            const uid = await signInWithGoogle()
-            sendResponse({ success: !!uid, data: uid })
+            const result = await signInWithGoogle()
+            if (result.error) {
+              sendResponse({ success: false, error: result.error })
+            } else if (result.uid) {
+              const settings = await getSettings()
+              settings.firebaseUid = result.uid
+              await saveSettings(settings)
+              sendResponse({ success: true, data: result.uid })
+            } else {
+              sendResponse({ success: false, error: 'Unknown sign-in error.' })
+            }
             break
           }
 

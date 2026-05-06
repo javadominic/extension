@@ -76,10 +76,11 @@ export default function SettingsPage() {
         await save({ firebaseUid: response.data as string })
         setToast({ msg: 'Signed in with Google!', type: 'success' })
       } else {
-        setToast({ msg: 'Sign-in failed. Check your OAuth setup.', type: 'error' })
+        const errMsg = response?.error || 'Sign-in failed. Check your OAuth setup.'
+        setToast({ msg: errMsg, type: 'error' })
       }
-    } catch {
-      setToast({ msg: 'Sign-in error. Ensure identity permission is set.', type: 'error' })
+    } catch (e: any) {
+      setToast({ msg: `Sign-in error: ${e?.message || 'Unknown error'}`, type: 'error' })
     } finally {
       setSigningIn(false)
     }
