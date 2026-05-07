@@ -5,6 +5,7 @@ import GraphPage     from './pages/GraphPage'
 import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
 import { getSettings } from '../lib/storage'
+import type { TeamData } from '../types'
 
 type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 
@@ -45,6 +46,34 @@ export default function App() {
     return () => mq.removeEventListener('change', handler)
   }, [])
 
+  const [totalNewShared, setTotalNewShared] = useState(0)
+
+  // Fetch shared bookmarks count
+  useEffect(() => {
+    async function loadCounts() {
+      const s = await getSettings()
+      const ids = s.teamIds ?? (s.teamId ? [s.teamId] : [])
+      if (ids.length > 0) {
+        let newCount = 0
+        for (const id of ids) {
+          try {
+            const res = await chrome.runtime.sendMessage({ type: 'GET_TEAM', payload: { teamId: id } })
+            if (res?.success && res.data) {
+              const team = res.data as TeamData
+              const totalShared = team.sharedBookmarks.length
+              const lastSeen = s.lastSeenSharedCount?.[id] || 0
+              if (totalShared > lastSeen) {
+                newCount += (totalShared - lastSeen)
+              }
+            }
+          } catch {}
+        }
+        setTotalNewShared(newCount)
+      }
+    }
+    loadCounts()
+  }, [])
+
   return (
     <div className="flex flex-col w-full h-full overflow-hidden">
       {/* Header */}
@@ -74,10 +103,17 @@ export default function App() {
           <button
             key={tab.id}
             id={`tab-${tab.id}`}
-            className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+            className={`tab-btn relative ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <span className="text-lg leading-none">{tab.icon}</span>
+            <div className="relative">
+              <span className="text-lg leading-none">{tab.icon}</span>
+              {tab.id === 'teams' && totalNewShared > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[16px] text-center border border-surface-card">
+                  {totalNewShared > 9 ? '9+' : totalNewShared}
+                </span>
+              )}
+            </div>
             <span>{tab.label}</span>
             {activeTab === tab.id && (
               <span className="w-4 h-0.5 rounded-full bg-primary-500 mt-0.5" />

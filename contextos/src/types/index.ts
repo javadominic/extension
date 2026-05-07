@@ -59,6 +59,7 @@ export interface AppSettings {
   displayName?: string // Google profile — saved on sign-in
   email?: string
   photoURL?: string
+  lastSeenSharedCount?: Record<string, number>
 }
 
 

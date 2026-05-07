@@ -49,6 +49,17 @@ export default function TeamsPage() {
     setMembers([])
     setLoadingShared(true)
     setLoadingMembers(true)
+    
+    // Clear notification badge for this team by updating lastSeenSharedCount
+    if (settings) {
+      const counts = settings.lastSeenSharedCount || {}
+      if (counts[t.id] !== t.sharedBookmarks.length) {
+        const newSettings = { ...settings, lastSeenSharedCount: { ...counts, [t.id]: t.sharedBookmarks.length } }
+        setSettings(newSettings)
+        saveSettings(newSettings).catch(() => {})
+      }
+    }
+
     try {
       const [sharedRes, membersRes] = await Promise.all([
         chrome.runtime.sendMessage({ type: 'GET_SHARED_BOOKMARKS', payload: { teamId: t.id } }),
@@ -246,7 +257,17 @@ export default function TeamsPage() {
           {/* Tabs */}
           <div className="flex gap-1">
             {(['shared', 'members', 'share'] as const).map(tab => (
-              <button key={tab} onClick={() => setDetailTab(tab)}
+              <button key={tab} onClick={() => {
+                setDetailTab(tab)
+                if (tab === 'shared' && activeTeam && settings) {
+                  const counts = settings.lastSeenSharedCount || {}
+                  if (counts[activeTeam.id] !== activeTeam.sharedBookmarks.length) {
+                    const newSettings = { ...settings, lastSeenSharedCount: { ...counts, [activeTeam.id]: activeTeam.sharedBookmarks.length } }
+                    setSettings(newSettings)
+                    saveSettings(newSettings).catch(() => {})
+                  }
+                }
+              }}
                 className={`flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all ${
                   detailTab === tab
                     ? 'bg-primary-600/30 text-primary-300 border border-primary-500/30'
@@ -426,17 +447,34 @@ export default function TeamsPage() {
             <p className="text-slate-600 text-xs">Tap "+ Add Team" to create or join one</p>
           </div>
         )}
-        {teams.map(t => (
-          <button key={t.id} onClick={() => openTeam(t)}
-            className="glass-card p-3 w-full flex items-center gap-3 text-left hover:border-primary-500/30 transition-all">
-            <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-lg flex-shrink-0">👥</div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-100 text-sm truncate">{t.name}</p>
-              <p className="text-[10px] text-slate-500">{t.members.length} member{t.members.length !== 1 ? 's' : ''} · {t.sharedBookmarks.length} shared</p>
-            </div>
-            <span className="text-slate-600 text-xs">›</span>
-          </button>
-        ))}
+        {teams.map(t => {
+          const newCount = t.sharedBookmarks.length - (settings?.lastSeenSharedCount?.[t.id] || 0)
+          return (
+            <button key={t.id} onClick={() => openTeam(t)}
+              className="glass-card p-3 w-full flex items-center gap-3 text-left hover:border-primary-500/30 transition-all">
+              <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-lg flex-shrink-0 relative">
+                👥
+                {newCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 border border-surface-card text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg">
+                    {newCount > 9 ? '9+' : newCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-slate-100 text-sm truncate">{t.name}</p>
+                  {newCount > 0 && (
+                    <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                      {newCount} new
+                    </span>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-500">{t.members.length} member{t.members.length !== 1 ? 's' : ''} · {t.sharedBookmarks.length} shared</p>
+              </div>
+              <span className="text-slate-600 text-xs">›</span>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
