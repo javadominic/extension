@@ -77,6 +77,7 @@ export type MessageType =
   | 'VALIDATE_GEMINI_KEY'
   | 'START_AI_SYNC'
   | 'AI_SYNC_PROGRESS'
+  | 'AI_SYNC_RATE_LIMITED'
   | 'MARK_ALIVE'
   | 'CREATE_TEAM'
   | 'JOIN_TEAM'

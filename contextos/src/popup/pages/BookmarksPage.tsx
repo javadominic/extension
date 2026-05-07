@@ -28,9 +28,21 @@ export default function BookmarksPage() {
   const [pendingEditId, setPendingEditId] = useState<string | null>(null)
 
   useEffect(() => {
-    // 0. Load bookmarks from cache immediately
+    // Fix 4: Load from cache only — never auto-sync on open.
+    // Notes, tags and health survive extension reloads because they live
+    // in chrome.storage.local. The user explicitly clicks "Sync" to pull
+    // fresh bookmarks from Chrome; we don't do it automatically.
     import('../../lib/storage').then(({ getCachedBookmarks }) => {
-      getCachedBookmarks().then(setBookmarks)
+      getCachedBookmarks().then((bms) => {
+        // Belt-and-suspenders URL dedup in case old cache has duplicates
+        const seen = new Set<string>()
+        const deduped = bms.filter((b) => {
+          if (!b.url || seen.has(b.url)) return false
+          seen.add(b.url)
+          return true
+        })
+        setBookmarks(deduped)
+      })
     })
 
     // 1. Initial check for pending edit
@@ -72,11 +84,17 @@ export default function BookmarksPage() {
           return
         }
         setAiProgress({ current, total })
-        
-        // Instantly patch the specific bookmark in the UI if we got the result back
         if (bookmark) {
           setBookmarks(prev => prev.map(b => b.id === bookmark.id ? bookmark : b))
         }
+      }
+      if (msg.type === 'AI_SYNC_RATE_LIMITED') {
+        const { retryAfter, remaining } = msg.payload
+        setAiProgress(null)
+        setToast({
+          msg: `⚠️ Gemini rate limit hit — ${remaining} bookmark${remaining !== 1 ? 's' : ''} pending. Auto-resuming in ${retryAfter}s.`,
+          type: 'error'
+        })
       }
     }
     chrome.runtime.onMessage.addListener(onMessage)

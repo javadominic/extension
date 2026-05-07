@@ -58,27 +58,43 @@ export function flattenTree(
 export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]> {
   const tree = await chrome.bookmarks.getTree()
   const flat = flattenTree(tree)
-  const settings = await getSettings()
-  
-  // Get existing bookmarks to preserve custom notes and tags
+  await getSettings()
+
+  // Get existing bookmarks to preserve notes, tags and health
   const existing = await getCachedBookmarks()
-  const existingMap = new Map(existing.map((b) => [b.id, b]))
+  const existingById  = new Map(existing.map((b) => [b.id,  b]))
+  const existingByUrl = new Map(existing.map((b) => [b.url, b]))
 
-  const bookmarks: BrainBookmark[] = await Promise.all(
-    flat.map(async (node) => {
-      const existingBm = existingMap.get(node.id)
-      const bm = chromeNodeToBookmark(node, uid)
-      
-      // Preserve existing data if present
-      if (existingBm) {
-        bm.note = existingBm.note
-        bm.tags = existingBm.tags
-        bm.health = existingBm.health
-      }
+  // ── Fix 1: URL-level deduplication ─────────────────────────────────────
+  // Chrome allows the same URL saved in multiple folders → deduplicate
+  // Keep the one with existing data (note/tags) if available, otherwise first seen.
+  const seenUrls = new Set<string>()
+  const dedupedFlat = flat.filter((node) => {
+    const url = node.url ?? ''
+    if (!url || seenUrls.has(url)) return false
+    seenUrls.add(url)
+    return true
+  })
+  // ───────────────────────────────────────────────────────────────────────
 
-      return bm
-    })
-  )
+  const bookmarks: BrainBookmark[] = dedupedFlat.map((node) => {
+    const bm = chromeNodeToBookmark(node, uid)
+
+    // ── Fix 2 & 3: Prefer cached data over raw Chrome data ──────────────
+    // Priority: match by ID first, then by URL (handles re-import cases)
+    const cached = existingById.get(node.id) ?? existingByUrl.get(node.url ?? '')
+
+    if (cached) {
+      // Fix 3: always keep non-empty note/tags from cache
+      bm.note = cached.note || bm.note
+      bm.tags = cached.tags.length ? cached.tags : bm.tags
+      // Fix 2: keep health from cache — don't reset to 'unchecked' on reload
+      bm.health = cached.health ?? 'unchecked'
+    }
+    // ────────────────────────────────────────────────────────────────────
+
+    return bm
+  })
 
   await setCachedBookmarks(bookmarks)
 

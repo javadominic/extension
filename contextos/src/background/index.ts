@@ -214,11 +214,9 @@ async function processAiQueue() {
 
     try {
       const note = await suggestNote(bm.url, bm.title, apiKey)
-        .catch(() => '')  // silent fallback on rate limit / error
-      const tags = await autoTag(bm.url, bm.title, note, apiKey)
 
       bm.note = note
-      bm.tags = tags
+      bm.tags = await autoTag(bm.url, bm.title, note, apiKey)
 
       await upsertBookmark(bm)
       
@@ -233,7 +231,22 @@ async function processAiQueue() {
         payload: { current: currentNum, total: totalAiQueueSize, bookmark: bm } 
       }).catch(() => {})
 
-    } catch (e) {
+    } catch (e: any) {
+      const msg: string = e?.message ?? ''
+      if (msg.startsWith('RATE_LIMIT:')) {
+        // Put the bookmark back so it isn't lost
+        aiQueue.unshift(bm)
+        const retryAfter = parseInt(msg.split(':')[1] ?? '60', 10)
+        chrome.runtime.sendMessage({
+          type: 'AI_SYNC_RATE_LIMITED',
+          payload: { retryAfter, remaining: aiQueue.length },
+        }).catch(() => {})
+        // Stop the queue — resume after Retry-After seconds
+        totalAiQueueSize = 0
+        isAiSyncing = false
+        setTimeout(() => processAiQueue(), retryAfter * 1000)
+        return
+      }
       console.warn(`Failed to generate AI content for ${bm.title}`, e)
     }
 
@@ -263,10 +276,13 @@ chrome.runtime.onMessage.addListener(
 
           case 'START_AI_SYNC': {
             const { bookmarks } = message.payload as { bookmarks: BrainBookmark[] }
-            aiQueue.push(...bookmarks)
-            totalAiQueueSize += bookmarks.length
+            // Deduplicate: skip bookmarks already in queue OR already processed (have a note)
+            const queuedIds = new Set(aiQueue.map(b => b.id))
+            const newBms = bookmarks.filter(b => !b.note && !queuedIds.has(b.id))
+            aiQueue.push(...newBms)
+            totalAiQueueSize += newBms.length
             processAiQueue()
-            sendResponse({ success: true })
+            sendResponse({ success: true, data: { queued: newBms.length, skipped: bookmarks.length - newBms.length } })
             break
           }
 
