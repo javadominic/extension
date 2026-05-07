@@ -8,11 +8,11 @@
 
 ## ✨ Features
 
-- **AI Auto-Note** — When you bookmark a page, Gemini instantly suggests *why* you saved it
-- **Smart Tags** — Auto-generated lowercase tags for every bookmark
+- **AI Auto-Note & Smart Tags** — Gemini instantly suggests *why* you saved a bookmark and auto-generates tags in a single optimized API call to maximize free-tier quotas
 - **Semantic Search** — Natural language search powered by Gemini 1.5 Flash
 - **Link Health** — Weekly dead-link checker with live/dead/unchecked badges
-- **Teams** — Share bookmark collections with teammates via Firestore
+- **Teams & Collaboration** — Share bookmark collections with teammates via Firestore, featuring consistent user identity resolution and robust offline fallbacks
+- **Smart Notifications** — Zero-read notification badges for newly shared team bookmarks using local delta synchronization
 - **Import** — Pull from Pocket, Notion, or Readwise
 - **Meet/Zoom Overlay** — Floating draggable panel with relevant bookmarks during meetings
 - **Toast Overlay** — Shadow DOM toast on every saved page: *"You saved this because…"*
