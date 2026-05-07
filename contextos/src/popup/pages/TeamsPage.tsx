@@ -328,24 +328,24 @@ export default function TeamsPage() {
                 const isCreator = activeTeam.members[0] === m.uid
                 return (
                   <div key={m.uid} className="glass-card p-2.5 flex items-center gap-2.5">
-                    {/* Avatar */}
+                    {/* Avatar — always first letter of UID for consistency */}
                     {m.photoURL
                       ? <img src={m.photoURL} className="w-8 h-8 rounded-full flex-shrink-0" alt="" />
-                      : <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-sm flex-shrink-0">
-                          {(m.displayName || m.email || '?')[0].toUpperCase()}
+                      : <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-xs font-mono flex-shrink-0">
+                          {m.uid.slice(0, 2).toUpperCase()}
                         </div>
                     }
-                    {/* Info */}
+                    {/* Info — UID is always primary, name/email secondary */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-semibold text-slate-200 truncate">
-                          {m.displayName || m.email || m.uid.slice(0, 12) + '…'}
+                        <p className="text-xs font-mono font-semibold text-slate-200 truncate">
+                          {m.uid.slice(0, 16)}…
                         </p>
                         {isYou && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-300 border border-primary-500/30">You</span>}
                         {isCreator && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Owner</span>}
                       </div>
-                      {m.email && m.displayName && (
-                        <p className="text-[10px] text-slate-500 truncate">{m.email}</p>
+                      {(m.displayName || m.email) && (
+                        <p className="text-[10px] text-slate-500 truncate">{m.displayName || m.email}</p>
                       )}
                     </div>
                     {/* Remove — only show for others, owner can remove anyone */}

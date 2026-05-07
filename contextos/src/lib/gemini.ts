@@ -41,6 +41,42 @@ async function callGemini(prompt: string, apiKey: string): Promise<string> {
   return text
 }
 
+/** Combined call: returns both note and tags in ONE request to save RPD quota. */
+export async function suggestNoteAndTags(
+  url: string,
+  title: string,
+  apiKey: string,
+  pageText?: string
+): Promise<{ note: string; tags: string[] }> {
+  let prompt = `You are a helpful bookmark assistant. Given the page below, return a JSON object with two fields:
+1. "note": ONE short sentence (max 15 words) explaining why someone would save this page. ALWAYS produce a sentence.
+2. "tags": an array of 2-4 short lowercase tags (e.g. ["react","tutorial","frontend"]).
+
+Title: "${title}"
+URL: ${url}`
+
+  if (pageText && pageText.trim().length > 30) {
+    prompt += `\nPage snippet:\n${pageText.substring(0, 3000)}`
+  }
+  prompt += `\n\nRespond with ONLY valid JSON like {"note":"...","tags":["...","..."]}. No markdown, no explanation.`
+
+  const raw = await callGemini(prompt, apiKey)
+
+  // Try to parse JSON — be forgiving in case Gemini wraps it in ```json
+  const jsonMatch = raw.match(/\{[\s\S]*\}/)
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]) as { note?: string; tags?: string[] }
+      const note = (parsed.note ?? '').trim()
+      const tags = Array.isArray(parsed.tags) ? parsed.tags.map(String) : []
+      if (note) return { note, tags }
+    } catch { /* fall through to plain text */ }
+  }
+
+  // Fallback: treat entire response as note, no tags
+  return { note: raw.trim(), tags: [] }
+}
+
 /** Suggest why someone saved a bookmark (max 15 words). Throws on real API errors. */
 export async function suggestNote(
   url: string,
@@ -48,20 +84,11 @@ export async function suggestNote(
   apiKey: string,
   pageText?: string
 ): Promise<string> {
-  // Strengthen the prompt so Gemini ALWAYS produces output — even without page text
-  let prompt = `You are a helpful bookmark assistant. Write ONE short sentence (max 15 words) explaining why someone would save this page. You MUST always produce a sentence — never return empty. Base it on the title and URL if page content is unavailable.\nTitle: "${title}"\nURL: ${url}`
-  if (pageText && pageText.trim().length > 30) {
-    prompt += `\nPage snippet:\n${pageText.substring(0, 3000)}`
-  }
-  prompt += `\n\nRespond with ONLY the sentence. No intro, no quotes, no preamble.`
-
-  try {
-    return await callGemini(prompt, apiKey)
-  } catch (err) {
-    // Re-throw everything including RATE_LIMIT so background can forward it
-    throw err
-  }
+  // Kept for backward compat — just delegates to the combined call
+  const { note } = await suggestNoteAndTags(url, title, apiKey, pageText)
+  return note
 }
+
 
 /** Auto-generate 2–4 lowercase tags for a bookmark. */
 export async function autoTag(
@@ -72,23 +99,16 @@ export async function autoTag(
   pageText?: string
 ): Promise<string[]> {
   try {
-    let prompt = `Generate 2-4 short lowercase tags for this bookmark.\nTitle: ${title}, URL: ${url}, Note: ${note}.`
-    if (pageText) {
-      prompt += `\nPage Content Snippet:\n${pageText}\n`
-    }
-    prompt += `\nReply with only a JSON array of strings like ["tag1","tag2"]. No explanation.`
-    
-    const raw = await callGemini(prompt, apiKey)
-    // Extract JSON array from response
-    const match = raw.match(/\[.*?\]/s)
-    if (match) return JSON.parse(match[0]) as string[]
-    return []
+    // If we already have a note, use it in the prompt for better tags
+    const { tags } = await suggestNoteAndTags(url, title, apiKey, pageText)
+    return tags
   } catch (err) {
-    if ((err as Error).message === 'RATE_LIMIT') return []
+    if ((err as Error).message?.includes('RATE_LIMIT')) return []
     console.error('[Gemini] autoTag error:', err)
     return []
   }
 }
+
 
 /** Semantic search: return bookmark IDs ordered by relevance. */
 export async function semanticSearch(

@@ -56,7 +56,11 @@ export interface AppSettings {
   teamId?: string      // kept for backward compat
   teamIds?: string[]   // multi-team support
   firebaseUid?: string
+  displayName?: string // Google profile — saved on sign-in
+  email?: string
+  photoURL?: string
 }
+
 
 export type MessageType =
   | 'GET_BOOKMARKS'

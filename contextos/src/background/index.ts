@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore, doc, setDoc, deleteDoc, getDoc, getDocs, collection, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
-import { suggestNote, autoTag } from '../lib/gemini'
+import { suggestNoteAndTags } from '../lib/gemini'
 import { getActiveTabText } from '../lib/pageText'
 import {
   getSettings,
@@ -137,8 +137,9 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   if (settings.geminiApiKey) {
     const pageText = await getActiveTabText()
     try {
-      bm.note = await suggestNote(bm.url, bm.title, settings.geminiApiKey, pageText)
-      bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
+      const { note, tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageText)
+      bm.note = note
+      bm.tags = tags
     } catch {
       // Rate limited or API error — bookmark saved without AI note
     }
@@ -213,10 +214,9 @@ async function processAiQueue() {
     }).catch(() => {})
 
     try {
-      const note = await suggestNote(bm.url, bm.title, apiKey)
-
+      const { note, tags } = await suggestNoteAndTags(bm.url, bm.title, apiKey)
       bm.note = note
-      bm.tags = await autoTag(bm.url, bm.title, note, apiKey)
+      bm.tags = tags
 
       await upsertBookmark(bm)
       
@@ -375,6 +375,13 @@ chrome.runtime.onMessage.addListener(
             } else if (result.uid) {
               const settings = await getSettings()
               settings.firebaseUid = result.uid
+              // Persist profile fields so teammates can see names even without Firestore
+              const user = auth.currentUser
+              if (user) {
+                settings.displayName = user.displayName ?? undefined
+                settings.email = user.email ?? undefined
+                settings.photoURL = user.photoURL ?? undefined
+              }
               await saveSettings(settings)
               sendResponse({ success: true, data: result.uid })
             } else {
@@ -382,6 +389,7 @@ chrome.runtime.onMessage.addListener(
             }
             break
           }
+
 
           case 'CREATE_TEAM': {
             try {
@@ -459,12 +467,37 @@ chrome.runtime.onMessage.addListener(
           case 'GET_TEAM_MEMBERS': {
             try {
               const { memberIds } = message.payload as { memberIds: string[] }
+              const settings = await getSettings()
+              const myUid = settings.firebaseUid ?? ''
+
+              // Proactively write the current user's profile so teammates can see their name
+              if (myUid && (settings.displayName || settings.email)) {
+                try {
+                  await setDoc(doc(db, 'users', myUid), {
+                    uid: myUid,
+                    displayName: settings.displayName ?? null,
+                    email: settings.email ?? null,
+                    photoURL: settings.photoURL ?? null,
+                  }, { merge: true })
+                } catch { /* non-critical */ }
+              }
+
               const profiles = await Promise.all(
                 memberIds.map(async uid => {
                   try {
                     const snap = await getDoc(doc(db, 'users', uid))
-                    return snap.exists() ? { uid, ...snap.data() } : { uid, displayName: null, email: null, photoURL: null }
-                  } catch { return { uid, displayName: null, email: null, photoURL: null } }
+                    if (snap.exists()) return { uid, ...snap.data() }
+                  } catch { /* ignore */ }
+                  // Fallback: if this UID is the current user, use their settings
+                  if (uid === myUid && (settings.displayName || settings.email)) {
+                    return {
+                      uid,
+                      displayName: settings.displayName ?? null,
+                      email: settings.email ?? null,
+                      photoURL: settings.photoURL ?? null,
+                    }
+                  }
+                  return { uid, displayName: null, email: null, photoURL: null }
                 })
               )
               sendResponse({ success: true, data: profiles })
@@ -473,6 +506,7 @@ chrome.runtime.onMessage.addListener(
             }
             break
           }
+
 
           case 'REMOVE_TEAM_MEMBER': {
             try {
@@ -532,7 +566,10 @@ chrome.runtime.onMessage.addListener(
               await upsertBookmark(bm)
               if (settings.geminiApiKey) {
                 const pageText = await getActiveTabText()
-                bm.tags = await autoTag(bm.url, bm.title, bm.note, settings.geminiApiKey, pageText)
+                try {
+                  const { tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageText)
+                  bm.tags = tags
+                } catch { /* ignore */ }
                 await upsertBookmark(bm)
               }
               
@@ -558,9 +595,14 @@ chrome.runtime.onMessage.addListener(
               break
             }
             const pageText = await getActiveTabText()
-            let note: string
             try {
-              note = await suggestNote(snUrl, snTitle, settings.geminiApiKey, pageText)
+              // One combined call → note + tags together (saves RPD quota)
+              const { note, tags } = await suggestNoteAndTags(snUrl, snTitle, settings.geminiApiKey, pageText)
+              if (!note) {
+                sendResponse({ success: false, error: 'EMPTY' })
+                break
+              }
+              sendResponse({ success: true, data: { note, tags } })
             } catch (geminiErr: any) {
               const msg = String(geminiErr)
               if (msg.includes('RATE_LIMIT')) {
@@ -570,16 +612,10 @@ chrome.runtime.onMessage.addListener(
               } else {
                 sendResponse({ success: false, error: msg })
               }
-              break
             }
-            if (!note) {
-              sendResponse({ success: false, error: 'EMPTY' })
-              break
-            }
-            const tags = await autoTag(snUrl, snTitle, note, settings.geminiApiKey, pageText)
-            sendResponse({ success: true, data: { note, tags } })
             break
           }
+
 
           case 'VALIDATE_GEMINI_KEY': {
             // Actually ping the Gemini API with the provided key and return the real error.
