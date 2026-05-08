@@ -3,13 +3,17 @@ import type { BrainBookmark } from '../types'
 const BASE_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
-async function callGemini(prompt: string, apiKey: string): Promise<string> {
+async function callGemini(prompt: string, apiKey: string, isJson = false): Promise<string> {
+  const generationConfig: any = { temperature: 0.4, maxOutputTokens: 256 }
+  if (isJson) {
+    generationConfig.responseMimeType = 'application/json'
+  }
   const response = await fetch(`${BASE_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.4, maxOutputTokens: 256 },
+      generationConfig,
     }),
   })
 
@@ -60,7 +64,7 @@ URL: ${url}`
   }
   prompt += `\n\nRespond with ONLY valid JSON like {"note":"...","tags":["...","..."]}. No markdown, no explanation.`
 
-  const raw = await callGemini(prompt, apiKey)
+  const raw = await callGemini(prompt, apiKey, true)
 
   // Try to parse JSON — be forgiving in case Gemini wraps it in ```json
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
@@ -70,11 +74,18 @@ URL: ${url}`
       const note = (parsed.note ?? '').trim()
       const tags = Array.isArray(parsed.tags) ? parsed.tags.map(String) : []
       if (note) return { note, tags }
-    } catch { /* fall through to plain text */ }
+    } catch { /* fall through to fallback */ }
   }
 
-  // Fallback: treat entire response as note, no tags
-  return { note: raw.trim(), tags: [] }
+  // Fallback: if JSON.parse fails, try to extract note from broken JSON
+  let noteFallback = raw.trim()
+  const partialMatch = noteFallback.match(/"note"\s*:\s*"([^"]+)/)
+  if (partialMatch) {
+    noteFallback = partialMatch[1]
+  } else {
+    noteFallback = noteFallback.replace(/^[^{]*{\s*"note"\s*:\s*"/, '').replace(/"\s*}.*$/, '')
+  }
+  return { note: noteFallback.trim() || title, tags: [] }
 }
 
 /** Suggest why someone saved a bookmark (max 15 words). Throws on real API errors. */
@@ -125,7 +136,7 @@ export async function semanticSearch(
       tags: b.tags,
     }))
     const prompt = `Given this search query: '${query}', return the IDs of the most relevant bookmarks from this list (JSON): ${JSON.stringify(slimBookmarks)}\nReply with only a JSON array of matching IDs, ordered by relevance. Max 10 results.`
-    const raw = await callGemini(prompt, apiKey)
+    const raw = await callGemini(prompt, apiKey, true)
     const match = raw.match(/\[.*?\]/s)
     if (match) return JSON.parse(match[0]) as string[]
     return []
