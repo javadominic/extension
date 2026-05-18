@@ -4,7 +4,15 @@ const BASE_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 
 async function callGemini(prompt: string, apiKey: string, isJson = false): Promise<string> {
-  const generationConfig: any = { temperature: 0.4, maxOutputTokens: 256 }
+  const generationConfig: any = {
+    temperature: 0.4,
+    maxOutputTokens: 512,
+    // Disable the hidden "thinking" token budget on gemini-2.5-flash.
+    // Without this, thinking tokens silently consume the entire maxOutputTokens
+    // allowance, leaving no room for the actual response and producing truncated
+    // output like `{"` instead of a complete JSON object.
+    thinkingConfig: { thinkingBudget: 0 },
+  }
   if (isJson) {
     generationConfig.responseMimeType = 'application/json'
   }
