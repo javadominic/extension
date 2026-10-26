@@ -3,6 +3,7 @@ import GraphView from '../../components/GraphView'
 import { getCachedBookmarks } from '../../lib/storage'
 import { buildGraph } from '../../lib/graph'
 import type { GraphData, GraphNode, BookmarkCluster } from '../../types'
+import graphIcon from '../../assets/icons/tab-graph.png'
 
 export default function GraphPage() {
   const [graphData, setGraphData] = useState<GraphData | null>(null)
@@ -36,7 +37,7 @@ export default function GraphPage() {
   if (bookmarkCount < 3) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-8 text-center">
-        <div className="text-5xl">🕸️</div>
+        <img src={graphIcon} alt="Knowledge graph" className="w-16 h-16 object-contain drop-shadow-lg animate-float" />
         <div>
           <p className="text-sm font-semibold text-slate-300">Not enough bookmarks yet</p>
           <p className="text-xs text-slate-500 mt-1">

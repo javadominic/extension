@@ -6,15 +6,25 @@ import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
 import { getSettings } from '../lib/storage'
 import type { TeamData } from '../types'
+import graphIcon from '../assets/icons/tab-graph.png'
+import teamsIcon from '../assets/icons/tab-teams.png'
+import settingsIcon from '../assets/icons/tab-settings.png'
 
 type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'search',    label: 'Search',  icon: '🔍' },
-  { id: 'bookmarks', label: 'Saves',   icon: '🔖' },
-  { id: 'graph',     label: 'Graph',   icon: '🕸️'  },
-  { id: 'teams',     label: 'Teams',   icon: '👥' },
-  { id: 'settings',  label: 'Settings',icon: '⚙️'  },
+interface TabItem {
+  id: Tab
+  label: string
+  icon?: string
+  image?: string
+}
+
+const TABS: TabItem[] = [
+  { id: 'search',    label: 'Search',   icon: '🔍' },
+  { id: 'bookmarks', label: 'Saves',    icon: '🔖' },
+  { id: 'graph',     label: 'Graph',    image: graphIcon },
+  { id: 'teams',     label: 'Teams',    image: teamsIcon },
+  { id: 'settings',  label: 'Settings', image: settingsIcon },
 ]
 
 export default function App() {
@@ -106,8 +116,16 @@ export default function App() {
             className={`tab-btn relative ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
-            <div className="relative">
-              <span className="text-lg leading-none">{tab.icon}</span>
+            <div className="relative flex items-center justify-center w-6 h-6">
+              {tab.image ? (
+                <img
+                  src={tab.image}
+                  alt={tab.label}
+                  className={`w-5 h-5 object-contain transition-all duration-150 ${activeTab === tab.id ? 'scale-110 drop-shadow-[0_2px_6px_rgba(232,160,52,0.4)]' : 'opacity-70 hover:opacity-100'}`}
+                />
+              ) : (
+                <span className="text-lg leading-none">{tab.icon}</span>
+              )}
               {tab.id === 'teams' && totalNewShared > 0 && (
                 <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[16px] text-center border border-surface-card">
                   {totalNewShared > 9 ? '9+' : totalNewShared}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'
 import { getSettings, saveSettings, getCachedBookmarks } from '../../lib/storage'
 import type { BrainBookmark, AppSettings, TeamData } from '../../types'
+import teamsIcon from '../../assets/icons/tab-teams.png'
 
 export default function TeamsPage() {
   const [settings,     setSettings]     = useState<AppSettings | null>(null)
@@ -210,7 +211,7 @@ export default function TeamsPage() {
   if (!settings?.firebaseUid) {
     return (
       <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-3">
-        <span className="text-5xl">👥</span>
+        <img src={teamsIcon} alt="Teams" className="w-16 h-16 object-contain drop-shadow-lg mb-1" />
         <p className="text-slate-200 font-semibold text-sm">Sign in to use Teams</p>
         <p className="text-slate-500 text-xs">Go to Settings and sign in with Google to collaborate.</p>
       </div>
@@ -238,7 +239,9 @@ export default function TeamsPage() {
           </div>
 
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-base">👥</div>
+            <div className="w-8 h-8 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center p-1.5 flex-shrink-0">
+              <img src={teamsIcon} alt="" className="w-full h-full object-contain" />
+            </div>
             <div>
               <p className="font-bold text-slate-100 text-sm">{activeTeam.name}</p>
               <p className="text-xs text-slate-500">{activeTeam.members.length} member{activeTeam.members.length !== 1 ? 's' : ''}</p>
@@ -442,7 +445,7 @@ export default function TeamsPage() {
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
         {teams.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <span className="text-4xl">👥</span>
+            <img src={teamsIcon} alt="Teams" className="w-16 h-16 object-contain drop-shadow-lg mb-1" />
             <p className="text-slate-400 text-sm font-semibold">No teams yet</p>
             <p className="text-slate-600 text-xs">Tap "+ Add Team" to create or join one</p>
           </div>
@@ -452,8 +455,8 @@ export default function TeamsPage() {
           return (
             <button key={t.id} onClick={() => openTeam(t)}
               className="glass-card p-3 w-full flex items-center gap-3 text-left hover:border-primary-500/30 transition-all">
-              <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-lg flex-shrink-0 relative">
-                👥
+              <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center p-1.5 flex-shrink-0 relative">
+                <img src={teamsIcon} alt="" className="w-full h-full object-contain" />
                 {newCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 border border-surface-card text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg">
                     {newCount > 9 ? '9+' : newCount}
