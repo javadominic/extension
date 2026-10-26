@@ -118,7 +118,6 @@ const SEARCH_STYLE = `
   .result-title { font-size: 12px; font-weight: 600; color: #e2e8f0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; margin-bottom: 2px; }
   .result-domain { font-size: 10px; color: #475569; margin-bottom: 3px; }
   .result-reason { font-size: 10px; color: #e8a034; font-weight: 500; }
-  .result-chain { font-size: 9px; color: #e8a034; background: rgba(232, 160, 52, 0.12); border: 1px solid rgba(232, 160, 52, 0.25); border-radius: 4px; padding: 1px 5px; display: inline-block; margin-top: 2px; font-weight: 500; }
   .result-note { font-size: 10px; color: #64748b; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
   .ext-icon { color: #475569; flex-shrink: 0; margin-top: 3px; }
@@ -273,9 +272,6 @@ function buildPanel(results: MatchResult[], query: string) {
     const noteSnip = r.bookmark.note
       ? `<div class="result-note">${r.bookmark.note.replace(/</g,'&lt;').replace(/>/g,'&gt;').substring(0, 80)}…</div>`
       : ''
-    const chainHint = (r.chainLength && r.chainLength > 1)
-      ? `<div class="result-chain">🔗 part of a ${r.chainLength}-page chain</div>`
-      : ''
     return `
       <a class="result-item" href="${r.bookmark.url}" target="_blank" rel="noopener noreferrer"
          id="ss-result-${i}" tabindex="0"
@@ -285,7 +281,6 @@ function buildPanel(results: MatchResult[], query: string) {
           <div class="result-title">${r.bookmark.title.replace(/</g,'&lt;')}</div>
           <div class="result-domain">${domain}</div>
           <div class="result-reason">${r.matchReason}</div>
-          ${chainHint}
           ${noteSnip}
         </div>
         <svg class="ext-icon" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

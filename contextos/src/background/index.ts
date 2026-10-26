@@ -691,12 +691,7 @@ chrome.runtime.onMessage.addListener(
             const s = await getSettings()
             const threshold = s.searchSuggest?.threshold ?? 2.5
             const results = findRelatedBookmarks(query, bookmarks, threshold)
-            const withChain = results.map(r => {
-              const key = r.bookmark.domainKey || getDomainKey(r.bookmark.url)
-              const count = bookmarks.filter(b => (b.domainKey || getDomainKey(b.url)) === key).length
-              return { ...r, chainLength: count }
-            })
-            sendResponse({ success: true, data: withChain })
+            sendResponse({ success: true, data: results })
             break
           }
 

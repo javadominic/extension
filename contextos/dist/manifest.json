@@ -36,7 +36,7 @@
     },
     {
       "js": [
-        "assets/searchSuggest.ts-DIomBUXO.js"
+        "assets/searchSuggest.ts-Bo6kO6QZ.js"
       ],
       "matches": [
         "https://www.google.com/search*",
@@ -97,7 +97,7 @@
         "https://www.google.com/*"
       ],
       "resources": [
-        "assets/searchSuggest.ts-DIomBUXO.js"
+        "assets/searchSuggest.ts-Bo6kO6QZ.js"
       ],
       "use_dynamic_url": false
     },
