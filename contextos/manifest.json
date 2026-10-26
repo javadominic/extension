@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Contextos",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Smart bookmark memory assistant with AI. Save why you bookmarked something and never forget again.",
   "author": "Your Name",
   "homepage_url": "https://github.com/yourusername/contextos",
@@ -28,6 +28,18 @@
     {
       "matches": ["<all_urls>"],
       "js": ["src/content/index.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.google.com/search*",
+        "https://google.com/search*",
+        "https://www.bing.com/search*",
+        "https://duckduckgo.com/*",
+        "https://search.brave.com/search*",
+        "https://search.opera.com/*"
+      ],
+      "js": ["src/content/searchSuggest.ts"],
       "run_at": "document_idle"
     },
     {

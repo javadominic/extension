@@ -1,4 +1,3 @@
-// Injects a toast via Shadow DOM when visiting a saved bookmark
 import type { BrainBookmark } from '../types'
 
 const TOAST_AUTO_DISMISS_MS = 5000
@@ -6,111 +5,107 @@ const TOAST_AUTO_DISMISS_MS = 5000
 const SHARED_STYLE = `
   @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Mono', system-ui, sans-serif; }
-  .toast {
+
+  .badge {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    z-index: 2147483647;
+    cursor: grab;
+    user-select: none;
+    transition: opacity 0.2s, transform 0.15s;
+  }
+  .badge:active { cursor: grabbing; }
+  .badge.dragging { transition: none; opacity: 0.85; }
+
+  .badge-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #161616;
+    border: 1px solid rgba(232,160,52,0.35);
+    border-radius: 99px;
+    padding: 7px 12px 7px 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,160,52,0.08);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .badge-pill:hover { border-color: rgba(232,160,52,0.6); }
+
+  .badge-count {
+    background: rgba(232,160,52,0.2);
+    color: #e8a034;
+    border-radius: 99px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes slideOut {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(16px); }
+  }
+
+  .panel {
+    position: fixed;
     z-index: 2147483647;
     background: #161616;
     border: 1px solid #262626;
     border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,160,52,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(232,160,52,0.08);
     animation: slideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
+    max-width: 320px;
+    min-width: 260px;
     color: #e2e8f0;
+    user-select: none;
   }
-  .toast.small {
-    padding: 10px 14px;
-    border-radius: 99px;
-    cursor: pointer;
-    transition: transform 0.15s, background 0.15s;
+  .panel.dismiss { animation: slideOut 0.3s ease-in forwards; }
+
+  .panel-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid #232323;
+    cursor: grab;
   }
-  .toast.small:hover {
-    transform: scale(1.02);
-    background: #1a1a1a;
-  }
-  .toast.expanded {
-    max-width: 340px;
-    min-width: 280px;
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(20px) scale(0.95); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .toast.dismiss {
-    animation: slideOut 0.3s ease-in forwards;
-  }
-  @keyframes slideOut {
-    from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(20px); }
-  }
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .favicon { width: 18px; height: 18px; border-radius: 4px; }
+  .panel-header:active { cursor: grabbing; }
+
   .brand {
     font-family: 'Instrument Serif', serif;
     font-style: italic;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 400;
     color: #e8a034;
+    flex: 1;
   }
+  .favicon { width: 16px; height: 16px; border-radius: 3px; }
+
   .close-btn {
-    margin-left: auto;
     background: none;
     border: none;
     color: #64748b;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     line-height: 1;
     padding: 0 2px;
     transition: color 0.15s;
+    flex-shrink: 0;
   }
   .close-btn:hover { color: #e2e8f0; }
-  .note {
-    font-size: 13px;
-    line-height: 1.5;
-    color: #cbd5e1;
-    margin-bottom: 10px;
-  }
-  .note strong { color: #fff; }
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 10px;
-  }
-  .tag {
-    background: rgba(232,160,52,0.1);
-    color: #e8a034;
-    border: 1px solid rgba(232,160,52,0.25);
-    border-radius: 99px;
-    padding: 2px 8px;
-    font-size: 11px;
-    font-weight: 500;
-  }
-  .actions { display: flex; gap: 8px; }
-  .btn {
-    flex: 1;
-    padding: 6px 10px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
-  }
-  .btn-primary { background: #e8a034; color: #0c0c0c; }
-  .btn-primary:hover { background: #d08c2a; }
-  .btn-ghost { background: rgba(255,255,255,0.06); color: #94a3b8; }
-  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
-  
+
+  .panel-body { padding: 10px 14px; }
+
   .note-card {
     background: rgba(255,255,255,0.04);
     border: 1px solid #2a2a2a;
@@ -121,23 +116,45 @@ const SHARED_STYLE = `
     gap: 8px;
     align-items: flex-start;
   }
-  .note-card-num {
-    color: #e8a034;
-    font-size: 10px;
-    font-weight: 700;
-    margin-top: 2px;
-    flex-shrink: 0;
+  .note-card-num { color: #e8a034; font-size: 10px; font-weight: 700; margin-top: 2px; flex-shrink: 0; }
+  .note-card-text { font-size: 12px; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+
+  .panel-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 12px;
+    border-top: 1px solid #1e1e1e;
+    gap: 10px;
   }
-  .note-card-text {
+  .btn-edit {
+    flex: 1;
+    padding: 7px 12px;
+    border-radius: 8px;
     font-size: 12px;
-    line-height: 1.5;
-    color: #cbd5e1;
-    white-space: pre-wrap;
-    word-break: break-word;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: #e8a034;
+    color: #0c0c0c;
+    transition: background 0.15s;
   }
+  .btn-edit:hover { background: #d08c2a; }
+  .btn-dismiss {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.15s;
+    font-family: 'DM Mono', system-ui, sans-serif;
+  }
+  .btn-dismiss:hover { color: #94a3b8; }
+
   .note-input {
     width: 100%;
-    height: 60px;
+    height: 64px;
     background: rgba(0,0,0,0.2);
     border: 1px solid #333;
     color: #e2e8f0;
@@ -145,12 +162,143 @@ const SHARED_STYLE = `
     padding: 8px;
     font-size: 12px;
     resize: none;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     outline: none;
     transition: border-color 0.2s;
+    font-family: 'DM Mono', system-ui, sans-serif;
   }
   .note-input:focus { border-color: #e8a034; }
+
+  .unsaved-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 99px;
+    padding: 6px 12px 6px 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .unsaved-pill:hover { border-color: rgba(232,160,52,0.4); background: #1a1a1a; }
+  .unsaved-pill-close {
+    background: none;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    padding: 0 0 0 4px;
+    transition: color 0.15s;
+  }
+  .unsaved-pill-close:hover { color: #e2e8f0; }
+
+  .unsaved-panel {
+    position: fixed;
+    z-index: 2147483647;
+    background: #161616;
+    border: 1px solid #262626;
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+    max-width: 300px;
+    min-width: 240px;
+    color: #e2e8f0;
+  }
+  .unsaved-panel-label { font-size: 11px; color: #94a3b8; display: block; margin-bottom: 6px; }
 `
+
+const CORNER_POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'] as const
+type Corner = typeof CORNER_POSITIONS[number]
+
+function cornerToStyle(corner: Corner, offset = 20): { [k: string]: string } {
+  const map: Record<Corner, [string, string, string, string]> = {
+    'bottom-right': ['auto', `${offset}px`, `${offset}px`, 'auto'],
+    'bottom-left':  ['auto', 'auto',        `${offset}px`, `${offset}px`],
+    'top-right':    [`${offset}px`, `${offset}px`, 'auto', 'auto'],
+    'top-left':     [`${offset}px`, 'auto', 'auto', `${offset}px`],
+  }
+  const [top, right, bottom, left] = map[corner]
+  return { top, right, bottom, left }
+}
+
+function nearestCorner(x: number, y: number, el: HTMLElement): Corner {
+  const w = window.innerWidth
+  const h = window.innerHeight
+  const cx = x + el.offsetWidth / 2
+  const cy = y + el.offsetHeight / 2
+  const right  = cx > w / 2
+  const bottom = cy > h / 2
+  if (bottom && right)  return 'bottom-right'
+  if (bottom && !right) return 'bottom-left'
+  if (!bottom && right) return 'top-right'
+  return 'top-left'
+}
+
+function applyCorner(el: HTMLElement, corner: Corner) {
+  const style = cornerToStyle(corner)
+  el.style.top    = style.top
+  el.style.right  = style.right
+  el.style.bottom = style.bottom
+  el.style.left   = style.left
+}
+
+async function getSavedCorner(hostname: string): Promise<Corner> {
+  const key = `ctx_corner_${hostname}`
+  const res = await chrome.storage.local.get(key)
+  return (res[key] as Corner) ?? 'bottom-right'
+}
+
+async function saveCorner(hostname: string, corner: Corner) {
+  await chrome.storage.local.set({ [`ctx_corner_${hostname}`]: corner })
+}
+
+function makeDraggable(el: HTMLElement, hostname: string, onCornerChange?: (c: Corner) => void) {
+  let dragging = false
+  let startX = 0; let startY = 0; let origLeft = 0; let origTop = 0
+
+  el.addEventListener('mousedown', e => {
+    if ((e.target as HTMLElement).tagName === 'BUTTON' ||
+        (e.target as HTMLElement).tagName === 'TEXTAREA' ||
+        (e.target as HTMLElement).tagName === 'INPUT') return
+
+    dragging = true
+    el.classList.add('dragging')
+
+    const rect = el.getBoundingClientRect()
+    el.style.right  = 'auto'
+    el.style.bottom = 'auto'
+    el.style.left   = `${rect.left}px`
+    el.style.top    = `${rect.top}px`
+
+    startX = e.clientX - rect.left
+    startY = e.clientY - rect.top
+    origLeft = rect.left
+    origTop  = rect.top
+
+    e.preventDefault()
+  })
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return
+    el.style.left = `${e.clientX - startX}px`
+    el.style.top  = `${e.clientY - startY}px`
+  })
+
+  document.addEventListener('mouseup', e => {
+    if (!dragging) return
+    dragging = false
+    el.classList.remove('dragging')
+
+    const corner = nearestCorner(e.clientX - startX, e.clientY - startY, el)
+    applyCorner(el, corner)
+    saveCorner(hostname, corner)
+    onCornerChange?.(corner)
+  })
+}
 
 function createHost() {
   document.querySelector('#contextos-toast-host')?.remove()
@@ -161,181 +309,169 @@ function createHost() {
 }
 
 function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
-  const host = createHost()
+  const host   = createHost()
   const shadow = host.attachShadow({ mode: 'open' })
-  const style = document.createElement('style')
+  const style  = document.createElement('style')
   style.textContent = SHARED_STYLE
   shadow.appendChild(style)
 
-  const toast = document.createElement('div')
-  toast.className = 'toast small'
-  
-  const hasExistingNote = existingBookmark && existingBookmark.note && !existingBookmark.note.startsWith('Interesting') && !existingBookmark.note.startsWith('Saved')
-  const labelText = hasExistingNote ? '＋ Add another remark' : (existingBookmark ? '＋ Add remark' : '＋ Save page')
-  
-  toast.innerHTML = `
-    <div style="display: flex; align-items: center; width: 100%;">
-      <span class="brand" style="font-size:15px; margin-right:4px; cursor:pointer;">🧠 Contextos</span>
-      <span style="font-size:12px; font-weight:500; color:#cbd5e1; flex: 1; cursor:pointer;">${labelText}</span>
-      <button class="close-btn" id="bm-widget-close" style="margin-left: 8px; font-size: 16px; z-index: 10;">×</button>
+  const hostname = location.hostname
+
+  const hasNote = existingBookmark?.note &&
+    !existingBookmark.note.startsWith('Interesting') &&
+    !existingBookmark.note.startsWith('Saved')
+  const labelText = hasNote
+    ? '＋ Add another remark'
+    : existingBookmark ? '＋ Add remark' : '＋ Save page'
+
+  const pill = document.createElement('div')
+  pill.className = 'badge'
+  pill.innerHTML = `
+    <div class="unsaved-pill" id="unsaved-pill-inner">
+      <span style="font-size:15px;">🧠</span>
+      <span style="font-size:12px; font-weight:500; color:#cbd5e1;">${labelText}</span>
+      <button class="unsaved-pill-close" id="unsaved-pill-close">×</button>
     </div>
   `
-  shadow.appendChild(toast)
+  shadow.appendChild(pill)
 
-  let autoDismissTimer: ReturnType<typeof setTimeout>
+  getSavedCorner(hostname).then(corner => {
+    applyCorner(pill, corner)
+  })
+  makeDraggable(pill, hostname)
 
-  function dismissWidget() {
-    clearTimeout(autoDismissTimer)
-    toast.classList.add('dismiss')
-    setTimeout(() => host.remove(), 350)
+  let dismissTimer = setTimeout(dismissPill, TOAST_AUTO_DISMISS_MS)
+
+  function dismissPill() {
+    clearTimeout(dismissTimer)
+    host.remove()
   }
 
-  // Auto dismiss after 5 seconds
-  autoDismissTimer = setTimeout(dismissWidget, 5000)
-
-  const closeWidgetBtn = shadow.getElementById('bm-widget-close')!
-  closeWidgetBtn.addEventListener('click', (e) => {
-    e.stopPropagation() // Prevent the widget from expanding
-    dismissWidget()
+  shadow.getElementById('unsaved-pill-close')?.addEventListener('click', e => {
+    e.stopPropagation()
+    dismissPill()
   })
 
-  // When clicked, expand to note-taking UI
-  toast.addEventListener('click', (e) => {
-    // Prevent expanding if the close button was somehow clicked but propagation wasn't stopped
-    if ((e.target as HTMLElement).id === 'bm-widget-close') return
+  shadow.getElementById('unsaved-pill-inner')?.addEventListener('click', e => {
+    if ((e.target as HTMLElement).id === 'unsaved-pill-close') return
+    clearTimeout(dismissTimer)
+    showEditPanel()
+    host.remove()
+  })
 
-    clearTimeout(autoDismissTimer) // Stop it from disappearing while they type!
+  function showEditPanel() {
+    const eHost   = createHost()
+    const eShadow = eHost.attachShadow({ mode: 'open' })
+    const eStyle  = document.createElement('style')
+    eStyle.textContent = SHARED_STYLE
+    eShadow.appendChild(eStyle)
 
-    toast.className = 'toast expanded'
-    toast.innerHTML = `
-      <div class="header" style="margin-bottom: 8px;">
-        <span class="brand">🧠 Contextos</span>
-        <button class="close-btn" id="bm-close">×</button>
+    const panel = document.createElement('div')
+    panel.className = 'unsaved-panel badge'
+    panel.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:grab;">
+        <span style="font-size:15px;">🧠</span>
+        <span class="brand" style="font-size:14px;">Contextos</span>
+        <button class="close-btn" id="ep-close">×</button>
       </div>
-      <label style="font-size:11px; color:#94a3b8; display:block; margin-bottom:6px;">Why are you saving this?</label>
-      <textarea id="bm-note-input" class="note-input" placeholder="Add a personal note..."></textarea>
-      <div class="actions">
-        <button class="btn btn-primary" id="bm-confirm-save">Save Note</button>
+      <label class="unsaved-panel-label">Why are you saving this?</label>
+      <textarea id="ep-note" class="note-input" placeholder="Add a personal note…"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-edit" id="ep-save" style="flex:1;">Save Note</button>
       </div>
     `
+    eShadow.appendChild(panel)
 
-    const closeBtn = shadow.getElementById('bm-close')!
-    const saveBtn = shadow.getElementById('bm-confirm-save')!
-    const noteInput = shadow.getElementById('bm-note-input') as HTMLTextAreaElement
+    getSavedCorner(hostname).then(corner => applyCorner(panel, corner))
+    makeDraggable(panel, hostname)
 
-    noteInput.focus()
+    const noteInput = eShadow.getElementById('ep-note') as HTMLTextAreaElement
+    noteInput?.focus()
 
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      dismissWidget()
-    })
+    eShadow.getElementById('ep-close')?.addEventListener('click', () => eHost.remove())
 
-    saveBtn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      const note = noteInput.value.trim()
+    eShadow.getElementById('ep-save')?.addEventListener('click', () => {
+      const note  = noteInput?.value.trim() ?? ''
       const title = document.title
-      const url = location.href
-
-      // Update UI to loading
-      saveBtn.textContent = 'Saving...'
+      const url   = location.href
+      const saveBtn = eShadow.getElementById('ep-save') as HTMLButtonElement
+      saveBtn.textContent = 'Saving…'
       saveBtn.style.opacity = '0.7'
-      
+
       if (existingBookmark) {
-        // APPEND to existing note — never overwrite!
-        chrome.runtime.sendMessage({
-          type: 'APPEND_NOTE',
-          payload: { id: existingBookmark.id, newNote: note, uid: existingBookmark.uid }
-        }, () => {
-          toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Note added successfully</div>`
-          setTimeout(() => {
-            toast.classList.add('dismiss')
-            setTimeout(() => host.remove(), 350)
-          }, 1500)
+        chrome.runtime.sendMessage({ type: 'APPEND_NOTE', payload: { id: existingBookmark.id, newNote: note, uid: existingBookmark.uid } }, () => {
+          panel.innerHTML = `<div style="text-align:center;color:#e8a034;font-size:13px;font-weight:500;padding:12px;">✓ Note added!</div>`
+          setTimeout(() => eHost.remove(), 1500)
         })
       } else {
-        // Create new bookmark with the note
-        chrome.runtime.sendMessage({
-          type: 'SAVE_NEW_PAGE_WITH_NOTE',
-          payload: { title, url, note }
-        }, () => {
-          toast.innerHTML = `<div style="text-align:center; color:#e8a034; font-size:13px; font-weight:500; padding:10px 0;">✓ Saved successfully</div>`
-          setTimeout(() => {
-            toast.classList.add('dismiss')
-            setTimeout(() => host.remove(), 350)
-          }, 1500)
+        chrome.runtime.sendMessage({ type: 'SAVE_NEW_PAGE_WITH_NOTE', payload: { title, url, note } }, () => {
+          panel.innerHTML = `<div style="text-align:center;color:#e8a034;font-size:13px;font-weight:500;padding:12px;">✓ Saved!</div>`
+          setTimeout(() => eHost.remove(), 1500)
         })
       }
     })
-  })
+  }
 }
 
 function injectToast(bookmark: BrainBookmark, onDismissed?: () => void) {
-  const host = createHost()
+  const host   = createHost()
   const shadow = host.attachShadow({ mode: 'open' })
-  const style = document.createElement('style')
+  const style  = document.createElement('style')
   style.textContent = SHARED_STYLE
   shadow.appendChild(style)
 
-  const toast = document.createElement('div')
-  toast.className = 'toast expanded'
-  
-  const domain = (() => {
-    try { return new URL(bookmark.url).hostname } catch { return '' }
-  })()
+  const hostname = location.hostname
+
+  const domain = (() => { try { return new URL(bookmark.url).hostname } catch { return '' } })()
 
   const noteEntries = bookmark.note
-    ? bookmark.note.split(/\n\n---\n/).map((n: string) => n.trim()).filter(Boolean)
+    ? bookmark.note.split(/\n\n---\n/).map(n => n.trim()).filter(Boolean)
     : []
 
   const notesHTML = noteEntries.length > 0
-    ? `<div style="margin-bottom:10px">
-        <div style="font-size:11px;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">
-          ${noteEntries.length} note${noteEntries.length > 1 ? 's' : ''}
+    ? noteEntries.map((n, i) => `
+        <div class="note-card">
+          <span class="note-card-num">#${i + 1}</span>
+          <span class="note-card-text">${n.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
         </div>
-        ${noteEntries.map((n: string, i: number) => `
-          <div class="note-card">
-            <span class="note-card-num">#${i + 1}</span>
-            <span class="note-card-text">${n.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-          </div>
-        `).join('')}
-      </div>`
-    : `<div class="note"><em style="color:#64748b">No note yet — click Edit to add one.</em></div>`
+      `).join('')
+    : `<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note — click Edit to add one.</p>`
 
-  toast.innerHTML = `
-    <div class="header">
+  const panel = document.createElement('div')
+  panel.className = 'panel badge'
+  panel.innerHTML = `
+    <div class="panel-header" id="panel-drag-handle">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" alt="" onerror="this.style.display='none'"/>
       <span class="brand">🧠 Contextos</span>
-      <button class="close-btn" id="bm-close">×</button>
+      <button class="close-btn" id="panel-close">×</button>
     </div>
-    ${notesHTML}
-    ${bookmark.tags && bookmark.tags.length
-      ? `<div class="tags">${bookmark.tags.map((t: string) => `<span class="tag">#${t}</span>`).join('')}</div>`
-      : ''
-    }
-    <div class="actions">
-      <button class="btn btn-primary" id="bm-edit">Edit note</button>
-      <button class="btn btn-ghost" id="bm-dismiss">Dismiss</button>
+    <div class="panel-body">${notesHTML}</div>
+    <div class="panel-footer">
+      <button class="btn-edit" id="panel-edit">Edit note</button>
+      <button class="btn-dismiss" id="panel-dismiss">Dismiss</button>
     </div>
   `
-  shadow.appendChild(toast)
+  shadow.appendChild(panel)
+
+  getSavedCorner(hostname).then(corner => applyCorner(panel, corner))
+  makeDraggable(panel, hostname)
 
   let timer: ReturnType<typeof setTimeout>
+
   function dismiss() {
     clearTimeout(timer)
-    toast.classList.add('dismiss')
+    panel.classList.add('dismiss')
     setTimeout(() => {
       host.remove()
-      if (onDismissed) onDismissed()
+      onDismissed?.()
     }, 350)
   }
 
-  shadow.getElementById('bm-close')?.addEventListener('click', dismiss)
-  shadow.getElementById('bm-dismiss')?.addEventListener('click', dismiss)
-  shadow.getElementById('bm-edit')?.addEventListener('click', () => {
-    // Set the pending edit BEFORE opening the popup so BookmarksPage
-    // can immediately open the modal for this specific bookmark.
+  shadow.getElementById('panel-close')?.addEventListener('click', dismiss)
+  shadow.getElementById('panel-dismiss')?.addEventListener('click', dismiss)
+  shadow.getElementById('panel-edit')?.addEventListener('click', () => {
     chrome.storage.local.set({ pending_edit: bookmark.id }, () => {
-      chrome.runtime.sendMessage({ type: 'OPEN_POPUP' }).catch(() => {})
+      chrome.runtime.sendMessage({ type: 'OPEN_POPUP' }).catch(() => { })
     })
     dismiss()
   })
@@ -347,19 +483,21 @@ function urlsMatch(a: string, b: string): boolean {
   try {
     const ua = new URL(a)
     const ub = new URL(b)
-    return ua.hostname === ub.hostname && ua.pathname.replace(/\/$/, '') === ub.pathname.replace(/\/$/, '')
+    return ua.hostname === ub.hostname &&
+      ua.pathname.replace(/\/$/, '') === ub.pathname.replace(/\/$/, '') &&
+      ua.search === ub.search
   } catch { return false }
 }
 
 function init() {
   const currentUrl = location.href
 
-  chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS' }, (response) => {
+  chrome.runtime.sendMessage({ type: 'GET_BOOKMARKS' }, response => {
     if (chrome.runtime.lastError || !response?.success || !Array.isArray(response.data)) return
-    
+
     const bookmarks = response.data as BrainBookmark[]
-    const match = bookmarks.find((b) => urlsMatch(b.url, currentUrl))
-    
+    const match = bookmarks.find(b => urlsMatch(b.url, currentUrl))
+
     if (match) {
       if (match.health !== 'alive') {
         chrome.runtime.sendMessage({ type: 'MARK_ALIVE', payload: { id: match.id } })
@@ -368,28 +506,21 @@ function init() {
       if (match.note) {
         const isDefault = match.note.startsWith('Interesting ') || match.note.startsWith('Saved for ')
         if (!isDefault) {
-          injectToast(match, () => {
-            // Once the toast disappears, show the widget so they can append more notes
-            injectUnsavedWidget(match)
-          })
+          injectToast(match, () => { injectUnsavedWidget(match) })
           return
         }
       }
-      // If we reach here, the page is saved but has NO meaningful custom note.
-      // Show the widget so they can add a note inline!
       injectUnsavedWidget(match)
     } else {
-      // Not saved yet, show floating widget
       injectUnsavedWidget()
     }
   })
 }
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'SHOW_TOAST' && msg.payload) {
     injectToast(msg.payload as BrainBookmark)
   } else if (msg.type === 'EXTRACT_TEXT') {
-    // Return up to 5000 chars of the page text securely
     const text = (document.body?.innerText || document.documentElement?.innerText || '').substring(0, 5000)
     sendResponse({ text })
   }

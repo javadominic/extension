@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore, doc, setDoc, deleteDoc, getDoc, getDocs, collection, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore'
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import { suggestNoteAndTags } from '../lib/gemini'
+import { findRelatedBookmarks } from '../lib/search'
 import { getActiveTabText } from '../lib/pageText'
 import {
   getSettings,
@@ -667,6 +668,53 @@ chrome.runtime.onMessage.addListener(
             } catch (e) {
               sendResponse({ success: false, error: `Network error: ${String(e)}` })
             }
+            break
+          }
+
+          case 'FIND_RELATED': {
+            const { query } = message.payload as { query: string }
+            const bookmarks = await getCachedBookmarks()
+            const s = await getSettings()
+            const threshold = s.searchSuggest?.threshold ?? 2.5
+            const results = findRelatedBookmarks(query, bookmarks, threshold)
+            sendResponse({ success: true, data: results })
+            break
+          }
+
+          case 'MUTE_SEARCH_QUERY': {
+            const { query: muteQuery } = message.payload as { query: string }
+            const s = await getSettings()
+            const mutedSearches = s.searchSuggest?.mutedSearches ?? []
+            if (!mutedSearches.includes(muteQuery)) mutedSearches.push(muteQuery)
+            await saveSettings({ searchSuggest: { ...(s.searchSuggest ?? { enabled: true, engines: { google: true, bing: true, duckduckgo: true, brave: true }, threshold: 2.5, badgeStyle: 'collapsed', mutedSites: [] }), mutedSearches } })
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'MUTE_SEARCH_SITE': {
+            const { site } = message.payload as { site: string }
+            const s = await getSettings()
+            const mutedSites = s.searchSuggest?.mutedSites ?? []
+            if (!mutedSites.includes(site)) mutedSites.push(site)
+            await saveSettings({ searchSuggest: { ...(s.searchSuggest ?? { enabled: true, engines: { google: true, bing: true, duckduckgo: true, brave: true }, threshold: 2.5, badgeStyle: 'collapsed', mutedSearches: [] }), mutedSites } })
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'RECHECK_BOOKMARKS': {
+            const { ids } = message.payload as { ids: string[] }
+            const all = await getCachedBookmarks()
+            for (const id of ids) {
+              const bm = all.find(b => b.id === id)
+              if (!bm) continue
+              try {
+                const status = await checkUrl(bm.url)
+                bm.health = status
+                bm.lastChecked = Date.now()
+                await upsertBookmark(bm)
+              } catch {}
+            }
+            sendResponse({ success: true })
             break
           }
 

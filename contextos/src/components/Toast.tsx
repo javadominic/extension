@@ -4,10 +4,11 @@ interface Props {
   message: string
   type?: 'success' | 'error' | 'info'
   onDismiss: () => void
+  onUndo?: () => void
   duration?: number
 }
 
-export default function Toast({ message, type = 'info', onDismiss, duration = 3000 }: Props) {
+export default function Toast({ message, type = 'info', onDismiss, onUndo, duration = 3000 }: Props) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
@@ -38,6 +39,14 @@ export default function Toast({ message, type = 'info', onDismiss, duration = 30
     >
       <span className="text-base flex-shrink-0">{icons[type]}</span>
       <span className="text-xs font-medium flex-1">{message}</span>
+      {onUndo && (
+        <button
+          onClick={() => { onUndo(); setVisible(false); setTimeout(onDismiss, 300) }}
+          className="text-xs font-bold text-primary-400 hover:text-primary-300 transition-colors flex-shrink-0 px-1.5 py-0.5 rounded border border-primary-500/30 hover:border-primary-500/60"
+        >
+          Undo
+        </button>
+      )}
       <button
         onClick={() => { setVisible(false); setTimeout(onDismiss, 300) }}
         className="text-slate-500 hover:text-slate-300 transition-colors text-lg leading-none flex-shrink-0"

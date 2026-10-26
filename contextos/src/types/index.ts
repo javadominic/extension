@@ -2,36 +2,37 @@ export interface BrainBookmark {
   id: string
   url: string
   title: string
-  note: string               // why they saved it
-  tags: string[]             // AI-generated tags
-  addedAt: number            // unix timestamp
+  note: string
+  tags: string[]
+  addedAt: number
   health: 'alive' | 'dead' | 'unchecked'
   lastChecked?: number
   source: 'chrome' | 'pocket' | 'notion' | 'readwise'
-  sharedWith?: string[]      // team member uids
+  sharedWith?: string[]
   uid: string
+  embedding?: number[]
 }
 
 export interface GraphNode {
-  id: string                 // bookmark id
+  id: string
   x: number
   y: number
-  radius: number             // scaled by connection count
+  radius: number
   clusterId: string
   bookmark: BrainBookmark
 }
 
 export interface GraphEdge {
-  source: string             // node id
-  target: string             // node id
+  source: string
+  target: string
   sharedTags: string[]
 }
 
 export interface BookmarkCluster {
-  id: string                 // dominant tag name
-  label: string              // display label
-  color: string              // hex color
-  nodeIds: string[]          // bookmark ids in this cluster
+  id: string
+  label: string
+  color: string
+  nodeIds: string[]
 }
 
 export interface GraphData {
@@ -45,23 +46,44 @@ export interface GraphData {
 export interface TeamData {
   id: string
   name: string
-  members: string[]          // uids
-  sharedBookmarks: string[]  // bookmark ids
+  members: string[]
+  sharedBookmarks: string[]
+}
+
+export interface SearchSuggestSettings {
+  enabled: boolean
+  engines: {
+    google: boolean
+    bing: boolean
+    duckduckgo: boolean
+    brave: boolean
+    opera?: boolean
+  }
+  threshold: number
+  badgeStyle: 'collapsed' | 'auto-expand'
+  mutedSearches: string[]
+  mutedSites: string[]
 }
 
 export interface AppSettings {
   geminiApiKey: string
   toastEnabled: boolean
   theme: 'light' | 'dark' | 'system'
-  teamId?: string      // kept for backward compat
-  teamIds?: string[]   // multi-team support
+  teamId?: string
+  teamIds?: string[]
   firebaseUid?: string
-  displayName?: string // Google profile — saved on sign-in
+  displayName?: string
   email?: string
   photoURL?: string
   lastSeenSharedCount?: Record<string, number>
+  searchSuggest?: SearchSuggestSettings
 }
 
+export interface MatchResult {
+  bookmark: BrainBookmark
+  score: number
+  matchReason: string
+}
 
 export type MessageType =
   | 'GET_BOOKMARKS'
@@ -92,6 +114,10 @@ export type MessageType =
   | 'UNSHARE_BOOKMARK'
   | 'GET_TEAM_MEMBERS'
   | 'REMOVE_TEAM_MEMBER'
+  | 'FIND_RELATED'
+  | 'MUTE_SEARCH_QUERY'
+  | 'MUTE_SEARCH_SITE'
+  | 'RECHECK_BOOKMARKS'
 
 export interface ChromeMessage {
   type: MessageType
