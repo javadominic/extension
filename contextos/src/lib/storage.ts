@@ -1,4 +1,5 @@
 import type { BrainBookmark, AppSettings } from '../types'
+import { getDomainKey } from './chains'
 
 // ─────────────────────────────────────────────
 // chrome.storage.SYNC  →  small stuff, all devices
@@ -37,10 +38,22 @@ export async function setHealthStatus(
 // Max: 10MB total — plenty of room
 // ─────────────────────────────────────────────
 
-// Read ALL cached bookmarks
+// Read ALL cached bookmarks with automatic domainKey backfill
 export async function getCachedBookmarks(): Promise<BrainBookmark[]> {
   const result = await chrome.storage.local.get('bookmarks_cache')
-  return result.bookmarks_cache ?? []   // returns empty array if nothing saved yet
+  const list: BrainBookmark[] = result.bookmarks_cache ?? []
+  let dirty = false
+  for (const b of list) {
+    if (!b.domainKey) {
+      b.domainKey = getDomainKey(b.url)
+      b.parentId = b.parentId ?? null
+      dirty = true
+    }
+  }
+  if (dirty) {
+    chrome.storage.local.set({ bookmarks_cache: list }).catch(() => {})
+  }
+  return list
 }
 
 // Save the full bookmark list

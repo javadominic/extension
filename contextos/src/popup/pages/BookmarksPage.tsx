@@ -3,8 +3,11 @@ import BookmarkCard from '../../components/BookmarkCard'
 import AddNoteModal from '../../components/AddNoteModal'
 import TagBadge     from '../../components/TagBadge'
 import Toast        from '../../components/Toast'
+import SiteChainCard from '../../components/SiteChainCard'
+import AddToChainModal from '../../components/AddToChainModal'
 import { getCachedBookmarks, getSettings } from '../../lib/storage'
 import { syncChromeBookmarks, updateNote, deleteBookmark } from '../../lib/bookmarks'
+import { groupBookmarksBySite, unlinkBookmark, type SiteGroup } from '../../lib/chains'
 import type { BrainBookmark } from '../../types'
 
 type HealthFilter = 'all' | 'alive' | 'dead' | 'unchecked'
@@ -57,6 +60,8 @@ export default function BookmarksPage() {
   const [bulkMode,     setBulkMode]     = useState(false)
   const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
   const [undoState,    setUndoState]    = useState<UndoState | null>(null)
+  const [groupBySite,  setGroupBySite]  = useState(false)
+  const [chainModalGroup, setChainModalGroup] = useState<SiteGroup | null>(null)
 
   useEffect(() => {
     import('../../lib/storage').then(({ getCachedBookmarks }) => {
@@ -261,6 +266,25 @@ export default function BookmarksPage() {
     })
   }
 
+  const siteGroups = useMemo(() => groupBookmarksBySite(filtered), [filtered])
+
+  const handleOpenAllInGroup = useCallback((group: SiteGroup) => {
+    for (const b of group.bookmarks) {
+      chrome.tabs.create({ url: b.url })
+    }
+  }, [])
+
+  const handleUnlink = useCallback(async (bookmarkId: string) => {
+    const s = await getSettings()
+    await unlinkBookmark(bookmarkId, s.firebaseUid)
+    setBookmarks(prev => prev.map(b => b.id === bookmarkId ? { ...b, parentId: null } : b))
+    setToast({ msg: 'Page unlinked from chain.', type: 'success' })
+  }, [])
+
+  const handleShowInGraph = useCallback((group: SiteGroup) => {
+    window.dispatchEvent(new CustomEvent('SWITCH_TAB', { detail: { tab: 'graph', domainKey: group.domainKey } }))
+  }, [])
+
   return (
     <div className="flex flex-col h-full">
       {toast && (
@@ -293,6 +317,20 @@ export default function BookmarksPage() {
               className="bg-primary-500 hover:bg-primary-600 text-slate-900 flex items-center gap-1.5 text-[11px] font-bold py-1 px-2.5 rounded shadow-sm transition-colors"
             >
               ＋ Save
+            </button>
+
+            <button
+              id="group-by-site-btn"
+              onClick={() => setGroupBySite(v => !v)}
+              className={`flex items-center gap-1 text-[11px] font-semibold py-1 px-2 rounded border transition-all duration-150 ${
+                groupBySite
+                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
+                  : 'border-surface-border text-slate-500 hover:text-slate-300 hover:border-slate-600'
+              }`}
+              title={groupBySite ? 'Flat list' : 'Group by site'}
+            >
+              <span>🔗</span>
+              <span>{groupBySite ? 'Grouped' : 'Group'}</span>
             </button>
 
             <button
@@ -445,6 +483,19 @@ export default function BookmarksPage() {
               </button>
             )}
           </div>
+        ) : groupBySite ? (
+          siteGroups.map(group => (
+            <SiteChainCard
+              key={group.domainKey}
+              group={group}
+              onOpenAll={handleOpenAllInGroup}
+              onAddToChain={() => setChainModalGroup(group)}
+              onUnlink={handleUnlink}
+              onShowInGraph={handleShowInGraph}
+              onEdit={setEditing}
+              onDelete={handleDelete}
+            />
+          ))
         ) : (
           filtered.map(bm => (
             <BookmarkCard
@@ -459,6 +510,20 @@ export default function BookmarksPage() {
           ))
         )}
       </div>
+
+      {chainModalGroup && (
+        <AddToChainModal
+          group={chainModalGroup}
+          allBookmarks={bookmarks}
+          onClose={() => setChainModalGroup(null)}
+          onSuccess={msg => {
+            setToast({ msg, type: 'success' })
+            import('../../lib/storage').then(({ getCachedBookmarks }) => {
+              getCachedBookmarks().then(setBookmarks)
+            })
+          }}
+        />
+      )}
 
       {editing && (
         <AddNoteModal

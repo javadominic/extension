@@ -11,6 +11,8 @@ export interface BrainBookmark {
   sharedWith?: string[]
   uid: string
   embedding?: number[]
+  parentId?: string | null
+  domainKey?: string
 }
 
 export interface GraphNode {
@@ -25,7 +27,8 @@ export interface GraphNode {
 export interface GraphEdge {
   source: string
   target: string
-  sharedTags: string[]
+  sharedTags?: string[]
+  type?: 'tag' | 'chain'
 }
 
 export interface BookmarkCluster {
@@ -77,12 +80,14 @@ export interface AppSettings {
   photoURL?: string
   lastSeenSharedCount?: Record<string, number>
   searchSuggest?: SearchSuggestSettings
+  allowCrossSiteChains?: boolean
 }
 
 export interface MatchResult {
   bookmark: BrainBookmark
   score: number
   matchReason: string
+  chainLength?: number
 }
 
 export type MessageType =
@@ -118,6 +123,8 @@ export type MessageType =
   | 'MUTE_SEARCH_QUERY'
   | 'MUTE_SEARCH_SITE'
   | 'RECHECK_BOOKMARKS'
+  | 'UNLINK_BOOKMARK'
+  | 'LINK_BOOKMARK'
 
 export interface ChromeMessage {
   type: MessageType

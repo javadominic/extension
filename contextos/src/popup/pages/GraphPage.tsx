@@ -14,10 +14,7 @@ export default function GraphPage() {
     getCachedBookmarks().then(bookmarks => {
       setBookmarkCount(bookmarks.length)
       if (bookmarks.length >= 3) {
-        // Filter to bookmarks that have tags so the graph is meaningful
-        const tagged = bookmarks.filter(b => b.tags.length > 0)
-        const source = tagged.length >= 3 ? tagged : bookmarks
-        setGraphData(buildGraph(source, 560, 420))
+        setGraphData(buildGraph(bookmarks, 560, 420))
       }
       setLoading(false)
     })

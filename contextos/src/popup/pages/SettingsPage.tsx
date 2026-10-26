@@ -213,6 +213,18 @@ export default function SettingsPage() {
           </div>
           <Toggle id="toast-toggle" checked={!!settings.toastEnabled} onChange={v => save({ toastEnabled: v })} />
         </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-200 font-medium">Cross-site chains</p>
+            <p className="text-[10px] text-slate-500">Allow linking chains across different websites</p>
+          </div>
+          <Toggle
+            id="cross-site-chains-toggle"
+            checked={!!settings.allowCrossSiteChains}
+            onChange={v => save({ allowCrossSiteChains: v })}
+          />
+        </div>
         <div>
           <p className="text-sm text-slate-200 font-medium mb-1.5">Theme</p>
           <div className="flex gap-2">

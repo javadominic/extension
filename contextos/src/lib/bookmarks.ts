@@ -16,6 +16,8 @@ import {
 } from './storage'
 import type { BrainBookmark } from '../types'
 
+import { getDomainKey } from './chains'
+
 function domainFromUrl(url: string): string {
   try {
     return new URL(url).hostname
@@ -29,16 +31,19 @@ export function chromeNodeToBookmark(
   node: chrome.bookmarks.BookmarkTreeNode,
   uid: string
 ): BrainBookmark {
+  const url = node.url ?? ''
   return {
     id: node.id,
-    url: node.url ?? '',
-    title: node.title || domainFromUrl(node.url ?? ''),
+    url,
+    title: node.title || domainFromUrl(url),
     note: '',
     tags: [],
     addedAt: node.dateAdded ?? Date.now(),
     health: 'unchecked',
     source: 'chrome',
     uid,
+    domainKey: getDomainKey(url),
+    parentId: null,
   }
 }
 
@@ -90,6 +95,8 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
       bm.tags = cached.tags.length ? cached.tags : bm.tags
       // Fix 2: keep health from cache — don't reset to 'unchecked' on reload
       bm.health = cached.health ?? 'unchecked'
+      if (cached.parentId !== undefined) bm.parentId = cached.parentId
+      if (cached.domainKey) bm.domainKey = cached.domainKey
     }
     // ────────────────────────────────────────────────────────────────────
 

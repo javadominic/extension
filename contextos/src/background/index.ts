@@ -15,6 +15,7 @@ import {
 } from '../lib/storage'
 import { checkUrl, checkAllBookmarks } from '../lib/healthCheck'
 import { chromeNodeToBookmark } from '../lib/bookmarks'
+import { detectParentBookmark, unlinkBookmark, linkBookmark, getDomainKey } from '../lib/chains'
 import type { BrainBookmark, ChromeMessage, ChromeResponse } from '../types'
 
 import { db, auth } from '../lib/firebase'
@@ -131,6 +132,13 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   const uid = settings.firebaseUid ?? ''
 
   const bm: BrainBookmark = chromeNodeToBookmark(node, uid)
+
+  try {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+    const activeTab = tabs[0]
+    const parentId = await detectParentBookmark(bm.url, activeTab?.openerTabId, undefined, settings.allowCrossSiteChains)
+    if (parentId) bm.parentId = parentId
+  } catch {}
 
   // Save the skeleton immediately so the popup can show it instantly
   await upsertBookmark(bm)
@@ -558,11 +566,17 @@ chrome.runtime.onMessage.addListener(
             const { title, url, note } = message.payload as { title: string; url: string; note: string }
             skipGeminiForUrls.add(url)
             chrome.bookmarks.create({ title, url }, async (node) => {
-              // We handle the FULL bookmark creation ourselves to avoid race conditions!
               const settings = await getSettings()
               const uid = settings.firebaseUid ?? ''
               const bm = chromeNodeToBookmark(node, uid)
               bm.note = note
+
+              try {
+                const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+                const activeTab = tabs[0]
+                const parentId = await detectParentBookmark(bm.url, activeTab?.openerTabId, undefined, settings.allowCrossSiteChains)
+                if (parentId) bm.parentId = parentId
+              } catch {}
               
               await upsertBookmark(bm)
               if (settings.geminiApiKey) {
@@ -677,7 +691,12 @@ chrome.runtime.onMessage.addListener(
             const s = await getSettings()
             const threshold = s.searchSuggest?.threshold ?? 2.5
             const results = findRelatedBookmarks(query, bookmarks, threshold)
-            sendResponse({ success: true, data: results })
+            const withChain = results.map(r => {
+              const key = r.bookmark.domainKey || getDomainKey(r.bookmark.url)
+              const count = bookmarks.filter(b => (b.domainKey || getDomainKey(b.url)) === key).length
+              return { ...r, chainLength: count }
+            })
+            sendResponse({ success: true, data: withChain })
             break
           }
 
@@ -714,6 +733,22 @@ chrome.runtime.onMessage.addListener(
                 await upsertBookmark(bm)
               } catch {}
             }
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'UNLINK_BOOKMARK': {
+            const { id } = message.payload as { id: string }
+            const s = await getSettings()
+            await unlinkBookmark(id, s.firebaseUid)
+            sendResponse({ success: true })
+            break
+          }
+
+          case 'LINK_BOOKMARK': {
+            const { childId, parentId } = message.payload as { childId: string; parentId: string }
+            const s = await getSettings()
+            await linkBookmark(childId, parentId, s.firebaseUid)
             sendResponse({ success: true })
             break
           }

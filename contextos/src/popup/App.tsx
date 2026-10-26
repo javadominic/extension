@@ -47,6 +47,11 @@ export default function App() {
 
     getSettings().then((s) => applyTheme(s.theme ?? 'system'))
 
+    const tabHandler = (e: any) => {
+      if (e.detail?.tab) setActiveTab(e.detail.tab)
+    }
+    window.addEventListener('SWITCH_TAB', tabHandler)
+
     // Listen for system preference changes when on 'system' mode
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     const handler = () => {

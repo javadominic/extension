@@ -11,6 +11,7 @@ interface Props {
   selected?: boolean
   onSelect?: (id: string, checked: boolean) => void
   bulkMode?: boolean
+  chainLength?: number
 }
 
 function timeAgo(ts: number): string {
@@ -52,7 +53,7 @@ const HEALTH_LABEL: Record<string, string> = {
 
 export default function BookmarkCard({
   bookmark, onEdit, onDelete, onShare, showTeamShare,
-  selected, onSelect, bulkMode,
+  selected, onSelect, bulkMode, chainLength,
 }: Props) {
   const [hovered, setHovered]   = useState(false)
   const [copied, setCopied]     = useState(false)
@@ -119,7 +120,18 @@ export default function BookmarkCard({
               </>
             ) : bookmark.title}
           </button>
-          <span className="text-[10px] text-slate-600 block truncate">{domain}</span>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[10px] text-slate-600 truncate">{domain}</span>
+            {chainLength && chainLength > 1 && (
+              <span
+                className="inline-flex items-center gap-1 text-[9px] text-primary-400 font-semibold bg-primary-500/15 px-1.5 py-0.2 rounded border border-primary-500/30 flex-shrink-0"
+                title={`Part of a ${chainLength}-page chain`}
+              >
+                <span>🔗</span>
+                <span>part of a {chainLength}-page chain</span>
+              </span>
+            )}
+          </div>
         </div>
 
         <div className={`flex items-center gap-0.5 transition-opacity duration-150 flex-shrink-0 ${

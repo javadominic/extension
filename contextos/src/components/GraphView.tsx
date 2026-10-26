@@ -108,6 +108,11 @@ export default function GraphView({ data, onSelectNode }: Props) {
               <stop offset="100%" stopColor={c.color} stopOpacity="0" />
             </radialGradient>
           ))}
+
+          {/* Directed chain arrow marker */}
+          <marker id="chain-arrow" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e8a034" />
+          </marker>
         </defs>
 
         <g transform={`translate(${viewport.x},${viewport.y}) scale(${viewport.scale})`}>
@@ -135,14 +140,16 @@ export default function GraphView({ data, onSelectNode }: Props) {
             const isHighlighted =
               hoveredId === e.source || hoveredId === e.target ||
               selectedId === e.source || selectedId === e.target
+            const isChain = e.type === 'chain'
             return (
               <line
                 key={i}
                 x1={src.x} y1={src.y}
                 x2={tgt.x} y2={tgt.y}
-                stroke={isHighlighted ? clusterColor[src.clusterId] ?? '#6366f1' : '#334155'}
-                strokeWidth={isHighlighted ? 1.5 : 0.8}
-                strokeOpacity={isHighlighted ? 0.8 : 0.35}
+                stroke={isChain ? '#e8a034' : (isHighlighted ? clusterColor[src.clusterId] ?? '#6366f1' : '#334155')}
+                strokeWidth={isChain ? (isHighlighted ? 2.5 : 2) : (isHighlighted ? 1.5 : 0.8)}
+                strokeOpacity={isChain ? 0.95 : (isHighlighted ? 0.8 : 0.35)}
+                markerEnd={isChain ? 'url(#chain-arrow)' : undefined}
               />
             )
           })}

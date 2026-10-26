@@ -6,6 +6,7 @@ import Toast        from '../../components/Toast'
 import { getCachedBookmarks, getSettings } from '../../lib/storage'
 import { semanticSearch } from '../../lib/gemini'
 import { updateNote, deleteBookmark } from '../../lib/bookmarks'
+import { getChainLength } from '../../lib/chains'
 import type { BrainBookmark } from '../../types'
 
 export default function SearchPage() {
@@ -132,6 +133,7 @@ export default function SearchPage() {
           <BookmarkCard
             key={bm.id}
             bookmark={bm}
+            chainLength={getChainLength(bm.id, all)}
             onEdit={setEditing}
             onDelete={handleDelete}
           />
