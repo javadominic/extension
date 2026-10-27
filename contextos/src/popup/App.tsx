@@ -15,9 +15,10 @@ import {
   IconSettings,
 } from '../components/LucideIcons'
 
-import graphIcon from '../assets/icons/tab-graph.png'
-import teamsIcon from '../assets/icons/tab-teams.png'
+import graphIcon    from '../assets/icons/tab-graph.png'
+import teamsIcon    from '../assets/icons/tab-teams.png'
 import settingsIcon from '../assets/icons/tab-settings.png'
+import contextosLogo from '/icons/icon128.png'
 
 type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 
@@ -104,12 +105,11 @@ export default function App() {
     <div className="flex flex-col w-full h-full overflow-hidden bg-bg text-text">
       {/* ── Header (Custom Contextos Logo Tile, Wordmark, AI Ready) ── */}
       <header className="sticky top-0 z-40 flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-surface select-none">
-        <div
-          className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0 text-base shadow-sm"
-          aria-hidden="true"
-        >
-          🧠
-        </div>
+        <img
+          src={contextosLogo}
+          alt="Contextos logo"
+          className="w-7 h-7 rounded-lg object-contain flex-shrink-0 shadow-sm"
+        />
         <span className="font-display italic text-xl text-text tracking-tight">Contextos</span>
         <div className="ml-auto flex items-center gap-1.5 text-xs text-text-secondary font-medium">
           <span className="w-2 h-2 rounded-full bg-live" aria-hidden="true" />
