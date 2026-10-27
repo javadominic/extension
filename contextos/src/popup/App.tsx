@@ -6,6 +6,15 @@ import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
 import { getSettings } from '../lib/storage'
 import type { TeamData } from '../types'
+import {
+  IconBrain,
+  IconSearch,
+  IconBookmark,
+  IconNetwork,
+  IconUsers,
+  IconSettings,
+} from '../components/LucideIcons'
+
 import graphIcon from '../assets/icons/tab-graph.png'
 import teamsIcon from '../assets/icons/tab-teams.png'
 import settingsIcon from '../assets/icons/tab-settings.png'
@@ -15,13 +24,13 @@ type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 interface TabItem {
   id: Tab
   label: string
-  icon?: string
+  Icon?: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
   image?: string
 }
 
 const TABS: TabItem[] = [
-  { id: 'search',    label: 'Search',   icon: '🔍' },
-  { id: 'bookmarks', label: 'Saves',    icon: '🔖' },
+  { id: 'search',    label: 'Search',   Icon: IconSearch },
+  { id: 'bookmarks', label: 'Saves',    Icon: IconBookmark },
   { id: 'graph',     label: 'Graph',    image: graphIcon },
   { id: 'teams',     label: 'Teams',    image: teamsIcon },
   { id: 'settings',  label: 'Settings', image: settingsIcon },
@@ -39,9 +48,7 @@ export default function App() {
       } else if (theme === 'dark') {
         root.setAttribute('data-theme', 'dark')
       } else {
-        // system: follow OS preference
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        root.setAttribute('data-theme', prefersDark ? 'dark' : 'light')
+        root.setAttribute('data-theme', 'system')
       }
     }
 
@@ -52,13 +59,17 @@ export default function App() {
     }
     window.addEventListener('SWITCH_TAB', tabHandler)
 
-    // Listen for system preference changes when on 'system' mode
-    const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    const handler = () => {
-      getSettings().then((s) => { if (s.theme === 'system') applyTheme('system') })
+    // Listen for storage theme changes in real time
+    function onStorageChange(changes: Record<string, chrome.storage.StorageChange>, area: string) {
+      if (area === 'local' && changes.settings?.newValue?.theme) {
+        applyTheme(changes.settings.newValue.theme)
+      }
     }
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    chrome.storage.onChanged.addListener(onStorageChange)
+    return () => {
+      window.removeEventListener('SWITCH_TAB', tabHandler)
+      chrome.storage.onChanged.removeListener(onStorageChange)
+    }
   }, [])
 
   const [totalNewShared, setTotalNewShared] = useState(0)
@@ -90,21 +101,24 @@ export default function App() {
   }, [])
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center gap-2.5 px-4 py-3 border-b border-surface-border bg-surface-card">
-        <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center text-base">
-          🧠
+    <div className="flex flex-col w-full h-full overflow-hidden bg-bg text-text">
+      {/* ── Header (Sticky, Lucide Brain on Amber Tile, Wordmark, AI Ready) ── */}
+      <header className="sticky top-0 z-40 flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-surface select-none">
+        <div
+          className="w-7 h-7 rounded-lg bg-amber flex items-center justify-center flex-shrink-0"
+          aria-hidden="true"
+        >
+          <IconBrain size={18} strokeWidth={1.5} className="text-[#1A1405]" />
         </div>
-        <span className="font-display italic text-xl text-slate-100 tracking-tight">Contextos</span>
-        <div className="ml-auto flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-slow" />
-          <span className="text-xs text-slate-500">AI ready</span>
+        <span className="font-display italic text-xl text-text tracking-tight">Contextos</span>
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-text-secondary font-medium">
+          <span className="w-2 h-2 rounded-full bg-live" aria-hidden="true" />
+          <span>AI ready</span>
         </div>
       </header>
 
-      {/* Page content */}
-      <main className="flex-1 overflow-hidden">
+      {/* ── Page Content ─────────────────────────────────────────────────── */}
+      <main className="flex-1 overflow-hidden relative">
         {activeTab === 'search'    && <SearchPage />}
         {activeTab === 'bookmarks' && <BookmarksPage />}
         {activeTab === 'graph'     && <GraphPage />}
@@ -112,37 +126,63 @@ export default function App() {
         {activeTab === 'settings'  && <SettingsPage />}
       </main>
 
-      {/* Bottom tab bar */}
-      <nav className="flex border-t border-surface-border bg-surface-card">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            id={`tab-${tab.id}`}
-            className={`tab-btn relative ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            <div className="relative flex items-center justify-center w-6 h-6">
-              {tab.image ? (
-                <img
-                  src={tab.image}
-                  alt={tab.label}
-                  className={`w-5 h-5 object-contain transition-all duration-150 ${activeTab === tab.id ? 'scale-110 drop-shadow-[0_2px_6px_rgba(232,160,52,0.4)]' : 'opacity-70 hover:opacity-100'}`}
+      {/* ── Bottom Nav (Five Lucide Icons, 2px Amber Top Bar when Active) ── */}
+      <nav
+        className="flex border-t border-border bg-surface min-h-[48px] select-none"
+        role="tablist"
+        aria-label="Navigation tabs"
+      >
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id
+          const TabIcon = tab.Icon
+          return (
+            <button
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              role="tab"
+              aria-selected={isActive}
+              aria-label={tab.label}
+              className={`relative flex-1 flex flex-col items-center justify-center py-1.5 gap-1 text-xs font-medium cursor-pointer transition-colors duration-normal min-h-[48px] ${
+                isActive
+                  ? 'text-amber-text'
+                  : 'text-text-secondary hover:text-text'
+              }`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {/* Active 2px amber top bar */}
+              {isActive && (
+                <div
+                  className="absolute top-0 left-0 right-0 h-[2px] bg-amber"
+                  aria-hidden="true"
                 />
-              ) : (
-                <span className="text-lg leading-none">{tab.icon}</span>
               )}
-              {tab.id === 'teams' && totalNewShared > 0 && (
-                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[9px] font-bold px-1 py-0.5 rounded-full min-w-[16px] text-center border border-surface-card">
-                  {totalNewShared > 9 ? '9+' : totalNewShared}
-                </span>
-              )}
-            </div>
-            <span>{tab.label}</span>
-            {activeTab === tab.id && (
-              <span className="w-4 h-0.5 rounded-full bg-primary-500 mt-0.5" />
-            )}
-          </button>
-        ))}
+
+              <div className="relative flex items-center justify-center w-5 h-5">
+                {tab.image ? (
+                  <img
+                    src={tab.image}
+                    alt={tab.label}
+                    className={`w-5 h-5 object-contain transition-all duration-150 ${
+                      isActive ? 'scale-110' : 'opacity-70 hover:opacity-100'
+                    }`}
+                  />
+                ) : TabIcon ? (
+                  <TabIcon
+                    size={20}
+                    strokeWidth={1.5}
+                    className={isActive ? 'text-amber' : 'currentColor'}
+                  />
+                ) : null}
+                {tab.id === 'teams' && totalNewShared > 0 && (
+                  <span className="absolute -top-1 -right-2 bg-dead text-white text-[10px] font-medium px-1 rounded-full min-w-[15px] text-center leading-tight">
+                    {totalNewShared > 9 ? '9+' : totalNewShared}
+                  </span>
+                )}
+              </div>
+              <span className="leading-none text-[11px]">{tab.label}</span>
+            </button>
+          )
+        })}
       </nav>
     </div>
   )

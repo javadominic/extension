@@ -36,11 +36,18 @@
     },
     {
       "js": [
-        "assets/searchSuggest.ts-Bo6kO6QZ.js"
+        "assets/searchSuggest.ts-DH_xQ0eO.js"
       ],
       "matches": [
         "https://www.google.com/search*",
         "https://google.com/search*",
+        "https://www.google.co.in/search*",
+        "https://www.google.co.uk/search*",
+        "https://www.google.ca/search*",
+        "https://www.google.com.au/search*",
+        "https://www.google.de/search*",
+        "https://www.google.fr/search*",
+        "https://www.google.co.jp/search*",
         "https://www.bing.com/search*",
         "https://duckduckgo.com/*",
         "https://search.brave.com/search*",
@@ -94,10 +101,17 @@
         "https://search.brave.com/*",
         "https://search.opera.com/*",
         "https://www.bing.com/*",
-        "https://www.google.com/*"
+        "https://www.google.ca/*",
+        "https://www.google.co.in/*",
+        "https://www.google.co.jp/*",
+        "https://www.google.co.uk/*",
+        "https://www.google.com.au/*",
+        "https://www.google.com/*",
+        "https://www.google.de/*",
+        "https://www.google.fr/*"
       ],
       "resources": [
-        "assets/searchSuggest.ts-Bo6kO6QZ.js"
+        "assets/searchSuggest.ts-DH_xQ0eO.js"
       ],
       "use_dynamic_url": false
     },

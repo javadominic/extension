@@ -1,45 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
     --popup-w: 380px;
     --popup-h: 560px;
+
+    /* ── Dark Theme Tokens (Default) ───────────────────────────── */
+    --bg: #0F0E0C;
+    --surface: #181612;
+    --surface-raised: #211E18;
+    --border: #2C2820;
+    --border-control: #736B5C;
+    --text: #F3EEE4;
+    --text-secondary: #B3AB9B;
+    --text-muted: #958D7D;
+    --amber: #E5A53A;
+    --amber-text: #F0BC62;
+    --text-on-amber: #1A1405;
+    --amber-soft: rgba(229, 165, 58, 0.12);
+    --live: #5FBF8A;
+    --dead: #E5675B;
+    --danger-text: #F0857A;
+    --unchecked: #958D7D;
+    --scrollbar: rgba(229, 165, 58, 0.3);
   }
 
-    html[data-theme='dark'], html:not([data-theme]) {
-    --bg-base:        #0c0c0c;
-    --bg-card:        #141414;
-    --bg-border:      rgba(255,255,255,0.07);
-    --text-primary:   #f0ede8;
-    --text-secondary: #7a7570;
-    --text-muted:     #3d3a38;
-    --scrollbar:      rgba(232,160,52,0.3);
+  /* ── Light Theme Tokens ───────────────────────────────────────── */
+  html[data-theme='light'] {
+    --bg: #FAF8F5;
+    --surface: #FFFFFF;
+    --surface-raised: #F2EFE9;
+    --border: #E5E0D5;
+    --border-control: #827866;
+    --text: #191714;
+    --text-secondary: #5A5346;
+    --text-muted: #70695B;
+    --amber: #E5A53A;
+    --amber-text: #945500;
+    --text-on-amber: #1A1405;
+    --amber-soft: rgba(229, 165, 58, 0.14);
+    --live: #187040;
+    --dead: #C92A1D;
+    --danger-text: #BA2115;
+    --unchecked: #70695B;
+    --scrollbar: rgba(229, 165, 58, 0.4);
   }
 
-    html[data-theme='light'] {
-    --bg-base:        #fdfdfc;
-    --bg-card:        #ffffff;
-    --bg-border:      rgba(0,0,0,0.07);
-    --text-primary:   #111111;
-    --text-secondary: #555555;
-    --text-muted:     #888888;
-    --scrollbar:      rgba(232,160,52,0.4);
+  /* ── System Theme (Follows OS preference) ─────────────────────── */
+  @media (prefers-color-scheme: light) {
+    html[data-theme='system'] {
+      --bg: #FAF8F5;
+      --surface: #FFFFFF;
+      --surface-raised: #F2EFE9;
+      --border: #E5E0D5;
+      --border-control: #827866;
+      --text: #191714;
+      --text-secondary: #5A5346;
+      --text-muted: #70695B;
+      --amber: #E5A53A;
+      --amber-text: #945500;
+      --text-on-amber: #1A1405;
+      --amber-soft: rgba(229, 165, 58, 0.14);
+      --live: #187040;
+      --dead: #C92A1D;
+      --danger-text: #BA2115;
+      --unchecked: #70695B;
+      --scrollbar: rgba(229, 165, 58, 0.4);
+    }
   }
 
   html, body, #root {
     width: var(--popup-w);
     height: var(--popup-h);
     overflow: hidden;
-    background-color: var(--bg-base);
-    color: var(--text-primary);
-    font-family: 'DM Sans', system-ui, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 14px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    transition: background-color 150ms ease, color 150ms ease;
   }
 
   * {
@@ -53,28 +97,162 @@
     background: var(--scrollbar);
     border-radius: 99px;
   }
+
+  /* 2px amber focus ring on interactive controls */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: none !important;
+    box-shadow: 0 0 0 2px var(--amber) !important;
+  }
+
+  /* Reduced motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-surface-card border border-surface-border rounded-xl;
+  /* Surface Layers */
+  .glass-card,
+  .surface-card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
   }
+
+  .surface-raised-card {
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  /* Primary Action: The ONE filled amber button */
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg px-4 py-2 transition-all duration-150 text-sm;
+    background-color: var(--amber);
+    color: var(--text-on-amber);
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: filter 150ms ease, opacity 150ms ease;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+  }
+  .btn-primary:active {
+    filter: brightness(0.95);
+  }
+
+  /* Secondary / Ghost buttons */
+  .btn-secondary {
+    background-color: var(--surface-raised);
+    color: var(--text);
+    border: 1px solid var(--border-control);
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-secondary:hover {
+    background-color: var(--surface);
+    border-color: var(--amber);
+  }
+
   .btn-ghost {
-    @apply bg-white/5 hover:bg-white/10 text-slate-300 font-medium rounded-lg px-3 py-1.5 transition-all duration-150 text-sm;
+    background-color: transparent;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color 150ms ease, background-color 150ms ease;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
   }
+  .btn-ghost:hover {
+    color: var(--text);
+    background-color: var(--surface-raised);
+  }
+
+  /* Input fields */
   .input-field {
-    @apply w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-slate-100
-           placeholder:text-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1
-           focus:ring-primary-500/40 transition-all duration-150 text-sm;
+    width: 100%;
+    background-color: var(--surface);
+    border: 1px solid var(--border-control);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 13px;
+    transition: border-color 150ms ease;
+    min-height: 36px;
   }
-  .tab-btn {
-    @apply flex flex-col items-center gap-0.5 flex-1 py-2 text-slate-500 transition-all duration-150 text-xs font-medium;
+  .input-field::placeholder {
+    color: var(--text-muted);
   }
-  .tab-btn.active {
-    @apply text-primary-400;
+  .input-field:focus {
+    outline: none;
+    border-color: var(--amber);
+  }
+
+  /* Neutral Chips (6px radius) */
+  .chip-neutral {
+    background-color: var(--surface-raised);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease;
+  }
+  .chip-neutral:hover {
+    color: var(--text);
+    border-color: var(--border-control);
+  }
+
+  /* Selected Amber Chip */
+  .chip-selected {
+    background-color: var(--amber-soft);
+    color: var(--amber-text);
+    border: 1px solid var(--amber);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
   }
 }
 

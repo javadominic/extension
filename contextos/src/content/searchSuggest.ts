@@ -173,19 +173,22 @@ function getCornerStyles(corner: Corner): { top: string; right: string; bottom: 
 }
 
 function getEngineKey(): 'google' | 'bing' | 'duckduckgo' | 'brave' | 'opera' | null {
-  const host = location.hostname
-  if (host === 'www.google.com' || host === 'google.com') return 'google'
-  if (host === 'www.bing.com')     return 'bing'
-  if (host === 'duckduckgo.com')   return 'duckduckgo'
-  if (host === 'search.brave.com') return 'brave'
-  if (host === 'search.opera.com') return 'opera'
+  const host = location.hostname.toLowerCase()
+  if (host.includes('google.'))     return 'google'
+  if (host.includes('bing.com'))    return 'bing'
+  if (host.includes('duckduckgo'))  return 'duckduckgo'
+  if (host.includes('brave.com'))   return 'brave'
+  if (host.includes('opera.com'))   return 'opera'
   return null
 }
 
 function extractQuery(): string | null {
-  const extractor = ENGINES[location.hostname]
-  if (!extractor) return null
-  return extractor(new URL(location.href))
+  try {
+    const url = new URL(location.href)
+    return url.searchParams.get('q') || url.searchParams.get('query') || null
+  } catch {
+    return null
+  }
 }
 
 async function loadSettings(): Promise<SearchSuggestSettings> {
@@ -382,7 +385,7 @@ async function processQuery(query: string) {
   if (!s?.enabled) { removePanelHost(); return }
 
   const engineKey = getEngineKey()
-  if (!engineKey || !s.engines[engineKey]) { removePanelHost(); return }
+  if (!engineKey || s.engines?.[engineKey] === false) { removePanelHost(); return }
 
   const q = query.toLowerCase().trim()
   if (s.mutedSearches.some(m => m.toLowerCase() === q)) { removePanelHost(); return }
