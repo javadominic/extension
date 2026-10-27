@@ -102,13 +102,13 @@ export default function App() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-bg text-text">
-      {/* ── Header (Sticky, Lucide Brain on Amber Tile, Wordmark, AI Ready) ── */}
+      {/* ── Header (Custom Contextos Logo Tile, Wordmark, AI Ready) ── */}
       <header className="sticky top-0 z-40 flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-surface select-none">
         <div
-          className="w-7 h-7 rounded-lg bg-amber flex items-center justify-center flex-shrink-0"
+          className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0 text-base shadow-sm"
           aria-hidden="true"
         >
-          <IconBrain size={18} strokeWidth={1.5} className="text-[#1A1405]" />
+          🧠
         </div>
         <span className="font-display italic text-xl text-text tracking-tight">Contextos</span>
         <div className="ml-auto flex items-center gap-1.5 text-xs text-text-secondary font-medium">

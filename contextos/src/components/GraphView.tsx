@@ -195,7 +195,7 @@ export default function GraphView({ data, onSelectNode }: Props) {
                   strokeWidth={active ? 1.5 : 0}
                 />
 
-                {/* Label — always show for large nodes, on hover for others */}
+                {/* Label - always show for large nodes, on hover for others */}
                 {(active || n.radius >= 11) && (
                   <text
                     x={n.x}

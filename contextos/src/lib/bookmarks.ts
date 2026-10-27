@@ -93,7 +93,7 @@ export async function syncChromeBookmarks(uid: string): Promise<BrainBookmark[]>
       // Fix 3: always keep non-empty note/tags from cache
       bm.note = cached.note || bm.note
       bm.tags = cached.tags.length ? cached.tags : bm.tags
-      // Fix 2: keep health from cache — don't reset to 'unchecked' on reload
+      // Fix 2: keep health from cache - don't reset to 'unchecked' on reload
       bm.health = cached.health ?? 'unchecked'
       if (cached.parentId !== undefined) bm.parentId = cached.parentId
       if (cached.domainKey) bm.domainKey = cached.domainKey

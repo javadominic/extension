@@ -33,7 +33,7 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
     setLoading(true)
     setAiError('')
     try {
-      // Route through the background service worker — the popup cannot call
+      // Route through the background service worker - the popup cannot call
       // external APIs directly due to Manifest V3 CSP restrictions.
       const response = await chrome.runtime.sendMessage({
         type: 'SUGGEST_NOTE',
@@ -44,14 +44,14 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
         if (response?.error === 'NO_KEY') {
           setAiError('Add your Gemini API key in Settings → AI tab.')
         } else if (response?.error === 'EMPTY') {
-          setAiError('Gemini returned an empty suggestion — try again or write your own note.')
+          setAiError('Gemini returned an empty suggestion. Try again or write your own note.')
         } else if (typeof response?.error === 'string' && response.error.startsWith('RATE_LIMIT')) {
           const seconds = parseInt(response.error.split(':')[1] ?? '60', 10)
           const minutes = Math.ceil(seconds / 60)
           setAiError(
             minutes > 1
-              ? `⏳ Gemini rate limit hit — free tier allows ~60 requests/min. Try again in ~${minutes} minutes.`
-              : `⏳ Gemini rate limit hit — try again in ~${seconds} seconds.`
+              ? `⏳ Gemini rate limit hit: free tier allows ~60 requests/min. Try again in ~${minutes} minutes.`
+              : `⏳ Gemini rate limit hit: try again in ~${seconds} seconds.`
           )
         } else {
           setAiError(`AI error: ${response?.error ?? 'Unknown. Check your API key in Settings.'}`)
@@ -205,7 +205,7 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
             </button>
           </div>
 
-          {/* Tag pills — tap to remove */}
+          {/* Tag pills - tap to remove */}
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
@@ -222,7 +222,7 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
             </div>
           )}
           {tags.length === 0 && (
-            <p className="text-[11px] text-slate-600 italic">No tags yet — add some above or use AI suggest</p>
+            <p className="text-[11px] text-slate-600 italic">No tags yet: add some above or use AI suggest</p>
           )}
         </div>
 

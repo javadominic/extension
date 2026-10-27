@@ -227,7 +227,7 @@
           <span class="note-card-num">#${p+1}</span>
           <span class="note-card-text">${m.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</span>
         </div>
-      `).join(""):'<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note — click Edit to add one.</p>',l=document.createElement("div");l.className="panel badge",l.innerHTML=`
+      `).join(""):'<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note: click Edit to add one.</p>',l=document.createElement("div");l.className="panel badge",l.innerHTML=`
     <div class="panel-header" id="panel-drag-handle">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${r}&sz=32" alt="" onerror="this.style.display='none'"/>
       <span class="brand">🧠 Contextos</span>

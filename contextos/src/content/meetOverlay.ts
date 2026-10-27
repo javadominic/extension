@@ -140,7 +140,7 @@ function buildPanel(bookmarks: BrainBookmark[]) {
   panel.innerHTML = `
     <div class="panel-header" id="bm-drag-handle">
       <span class="panel-title">🧠 Contextos</span>
-      <button class="icon-btn" id="bm-minimize" title="Minimize">—</button>
+      <button class="icon-btn" id="bm-minimize" title="Minimize">−</button>
       <button class="icon-btn" id="bm-close-panel" title="Close">×</button>
     </div>
     <div class="panel-body" id="bm-panel-body">
@@ -176,7 +176,7 @@ function buildPanel(bookmarks: BrainBookmark[]) {
     minimized = !minimized
     body.classList.toggle('minimized', minimized)
     const btn = shadow!.getElementById('bm-minimize')!
-    btn.textContent = minimized ? '▲' : '—'
+    btn.textContent = minimized ? '▲' : '−'
   })
 
   shadow.getElementById('bm-close-panel')?.addEventListener('click', () => {

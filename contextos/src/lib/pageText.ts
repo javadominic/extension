@@ -32,7 +32,7 @@ export async function getActiveTabText(): Promise<string> {
     const response = await chrome.tabs.sendMessage(tab.id, { type: 'EXTRACT_TEXT' })
     return response?.text ?? ''
   } catch {
-    // Tab closed, or content script not yet injected on that page — safe to ignore
+    // Tab closed, or content script not yet injected on that page - safe to ignore
     return ''
   }
 }

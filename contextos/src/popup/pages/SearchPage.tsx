@@ -101,7 +101,7 @@ export default function SearchPage() {
             <span className="text-5xl mb-3">🔍</span>
             <p className="text-slate-300 font-semibold text-sm mb-1">AI-powered search</p>
             <p className="text-slate-500 text-xs leading-relaxed">
-              Type anything — topics, reasons, keywords. Gemini finds the most relevant bookmarks semantically.
+              Type anything: topics, reasons, keywords. Gemini finds the most relevant bookmarks semantically.
             </p>
           </div>
         )}

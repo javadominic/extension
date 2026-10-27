@@ -88,7 +88,7 @@ export function buildGraph(
     degree[e.target] = (degree[e.target] ?? 0) + 1
   }
 
-  // 5. Initialise node positions — clustered radially around domain cluster centres
+  // 5. Initialise node positions - clustered radially around domain cluster centres
   const cx = width / 2
   const cy = height / 2
   const clusterAngleStep = (2 * Math.PI) / Math.max(clusterIds.length, 1)

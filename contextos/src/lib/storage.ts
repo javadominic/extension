@@ -35,7 +35,7 @@ export async function setHealthStatus(
 // ─────────────────────────────────────────────
 // chrome.storage.LOCAL  →  big stuff, this device only
 // Think: bookmark list, AI embeddings, import history
-// Max: 10MB total — plenty of room
+// Max: 10MB total - plenty of room
 // ─────────────────────────────────────────────
 
 // Read ALL cached bookmarks with automatic domainKey backfill

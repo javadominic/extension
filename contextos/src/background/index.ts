@@ -150,7 +150,7 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
       bm.note = note
       bm.tags = tags
     } catch {
-      // Rate limited or API error — bookmark saved without AI note
+      // Rate limited or API error - bookmark saved without AI note
     }
     // Update cache with AI notes (or skeleton if AI failed)
     await upsertBookmark(bm)
@@ -250,7 +250,7 @@ async function processAiQueue() {
           type: 'AI_SYNC_RATE_LIMITED',
           payload: { retryAfter, remaining: aiQueue.length },
         }).catch(() => {})
-        // Stop the queue — resume after Retry-After seconds
+        // Stop the queue - resume after Retry-After seconds
         totalAiQueueSize = 0
         isAiSyncing = false
         setTimeout(() => processAiQueue(), retryAfter * 1000)
@@ -671,9 +671,9 @@ chrome.runtime.onMessage.addListener(
                   sendResponse({ success: false, error: 'Model not found, and failed to list available models.' })
                 }
               } else if (res.status === 403 || res.status === 401) {
-                sendResponse({ success: false, error: 'Invalid API key — check it in Google AI Studio.' })
+                sendResponse({ success: false, error: 'Invalid API key: check it in Google AI Studio.' })
               } else if (res.status === 429) {
-                sendResponse({ success: false, error: 'Rate limit hit — key is valid but quota exceeded.' })
+                sendResponse({ success: false, error: 'Rate limit hit: key is valid but quota exceeded.' })
               } else {
                 const body = await res.json().catch(() => ({}))
                 const msg = (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`

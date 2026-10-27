@@ -40,7 +40,7 @@ async function callGemini(prompt: string, apiKey: string, isJson = false): Promi
   }
 
   const candidate = data?.candidates?.[0]
-  // Safety filter or recitation block — candidate exists but content is null
+  // Safety filter or recitation block - candidate exists but content is null
   if (candidate && !candidate.content) {
     const reason = candidate.finishReason ?? 'SAFETY'
     throw new Error(`Gemini blocked response (${reason}).`)
@@ -74,7 +74,7 @@ URL: ${url}`
 
   const raw = await callGemini(prompt, apiKey, true)
 
-  // Try to parse JSON — be forgiving in case Gemini wraps it in ```json
+  // Try to parse JSON - be forgiving in case Gemini wraps it in ```json
   const jsonMatch = raw.match(/\{[\s\S]*\}/)
   if (jsonMatch) {
     try {
@@ -103,13 +103,13 @@ export async function suggestNote(
   apiKey: string,
   pageText?: string
 ): Promise<string> {
-  // Kept for backward compat — just delegates to the combined call
+  // Kept for backward compat - just delegates to the combined call
   const { note } = await suggestNoteAndTags(url, title, apiKey, pageText)
   return note
 }
 
 
-/** Auto-generate 2–4 lowercase tags for a bookmark. */
+/** Auto-generate 2-4 lowercase tags for a bookmark. */
 export async function autoTag(
   url: string,
   title: string,

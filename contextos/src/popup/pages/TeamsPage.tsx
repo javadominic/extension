@@ -352,14 +352,14 @@ export default function TeamsPage() {
                 const isCreator = activeTeam.members[0] === m.uid
                 return (
                   <div key={m.uid} className="glass-card p-2.5 flex items-center gap-2.5">
-                    {/* Avatar — always first letter of UID for consistency */}
+                    {/* Avatar - always first letter of UID for consistency */}
                     {m.photoURL
                       ? <img src={m.photoURL} className="w-8 h-8 rounded-full flex-shrink-0" alt="" />
                       : <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-xs font-mono flex-shrink-0">
                           {m.uid.slice(0, 2).toUpperCase()}
                         </div>
                     }
-                    {/* Info — UID is always primary, name/email secondary */}
+                    {/* Info - UID is always primary, name/email secondary */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-mono font-semibold text-slate-200 truncate">
@@ -372,7 +372,7 @@ export default function TeamsPage() {
                         <p className="text-[10px] text-slate-500 truncate">{m.displayName || m.email}</p>
                       )}
                     </div>
-                    {/* Remove — only show for others, owner can remove anyone */}
+                    {/* Remove - only show for others, owner can remove anyone */}
                     {!isYou && (
                       <button
                         onClick={() => handleRemoveMember(m.uid)}

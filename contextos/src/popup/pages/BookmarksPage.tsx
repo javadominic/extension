@@ -110,7 +110,7 @@ export default function BookmarksPage() {
         const { retryAfter, remaining } = msg.payload
         setAiProgress(null)
         setToast({
-          msg: `⚠️ Gemini rate limit — ${remaining} bookmark${remaining !== 1 ? 's' : ''} pending. Resuming in ${retryAfter}s.`,
+          msg: `⚠️ Gemini rate limit: ${remaining} bookmark${remaining !== 1 ? 's' : ''} pending. Resuming in ${retryAfter}s.`,
           type: 'error',
         })
       }
@@ -445,7 +445,7 @@ export default function BookmarksPage() {
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
-            <option value="az">A–Z</option>
+            <option value="az">A-Z</option>
           </select>
         </div>
 

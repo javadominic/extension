@@ -455,9 +455,9 @@ export default function SettingsPage() {
                 </span>
               ) : 'Test key'}
             </button>
-            {keyStatus === 'valid'   && <span className="text-xs text-live font-medium">✓ Key works — AI ready</span>}
+            {keyStatus === 'valid'   && <span className="text-xs text-live font-medium">✓ Key works: AI ready</span>}
             {keyStatus === 'invalid' && <span className="text-xs text-dead font-medium">✗ Key failed. Check it and try again.</span>}
-            {keyStatus === 'idle'    && <span className="text-xs text-text-muted">Key saved — click test to verify</span>}
+            {keyStatus === 'idle'    && <span className="text-xs text-text-muted">Key saved: click test to verify</span>}
           </div>
         )}
         {keyStatus === 'invalid' && keyError && (

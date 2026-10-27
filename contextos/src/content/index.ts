@@ -435,7 +435,7 @@ function injectToast(bookmark: BrainBookmark, onDismissed?: () => void) {
           <span class="note-card-text">${n.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
         </div>
       `).join('')
-    : `<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note — click Edit to add one.</p>`
+    : `<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note: click Edit to add one.</p>`
 
   const panel = document.createElement('div')
   panel.className = 'panel badge'
