@@ -51,6 +51,7 @@ export interface TeamData {
   name: string
   members: string[]
   sharedBookmarks: string[]
+  createdBy?: string
 }
 
 export interface SearchSuggestSettings {
@@ -70,6 +71,7 @@ export interface SearchSuggestSettings {
 
 export interface AppSettings {
   geminiApiKey: string
+  geminiModel?: string
   toastEnabled: boolean
   theme: 'light' | 'dark' | 'system'
   teamId?: string

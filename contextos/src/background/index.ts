@@ -519,7 +519,15 @@ chrome.runtime.onMessage.addListener(
 
           case 'REMOVE_TEAM_MEMBER': {
             try {
-              const { teamId, memberId } = message.payload as { teamId: string; memberId: string }
+              const { teamId, memberId, requesterId } = message.payload as { teamId: string; memberId: string; requesterId: string }
+              // Only the team creator (createdBy) may remove members
+              const teamSnap = await getDoc(doc(db, 'teams', teamId))
+              if (!teamSnap.exists()) throw new Error('Team not found')
+              const teamData = teamSnap.data()
+              if (teamData.createdBy !== requesterId) {
+                sendResponse({ success: false, error: 'Only the team owner can remove members.' })
+                break
+              }
               await updateDoc(doc(db, 'teams', teamId), { members: arrayRemove(memberId) })
               sendResponse({ success: true })
             } catch (err: any) {
@@ -636,48 +644,70 @@ chrome.runtime.onMessage.addListener(
             // Actually ping the Gemini API with the provided key and return the real error.
             const { key } = message.payload as { key: string }
             try {
-              const res = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-                {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    contents: [{ parts: [{ text: 'ping' }] }],
-                    generationConfig: { maxOutputTokens: 1 },
-                  }),
+              // Try gemini-2.5-flash first (works for Opera/existing keys), then gemini-3.5-flash (works for newer accounts)
+              const candidateModels = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.8-flash']
+              let validated = false
+              let workingModel = 'gemini-2.5-flash'
+              let lastError = ''
+
+              for (const model of candidateModels) {
+                const res = await fetch(
+                  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      contents: [{ parts: [{ text: 'ping' }] }],
+                      generationConfig: { maxOutputTokens: 1 },
+                    }),
+                  }
+                )
+
+                if (res.ok || res.status === 400) {
+                  validated = true
+                  workingModel = model
+                  break
                 }
-              )
-              
-              if (res.ok || res.status === 400) {
-                sendResponse({ success: true })
-              } else if (res.status === 404) {
-                // If model not found, query the API to see what models THIS key actually has access to!
+
+                if (res.status === 401 || res.status === 403) {
+                  lastError = 'Invalid API key: check it in Google AI Studio.'
+                  break
+                }
+                if (res.status === 429) {
+                  lastError = 'Rate limit hit: key is valid but quota exceeded.'
+                  break
+                }
+              }
+
+              if (validated) {
+                await saveSettings({ geminiModel: workingModel })
+                sendResponse({ success: true, data: { model: workingModel } })
+              } else if (lastError) {
+                sendResponse({ success: false, error: lastError })
+              } else {
+                // If all candidates 404ed, query models to provide a helpful message or fallback
                 try {
                   const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
                   const listData = await listRes.json()
                   const available = (listData.models || [])
                     .filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'))
                     .map((m: any) => m.name.replace('models/', ''))
-                    
-                  if (available.length > 0) {
+
+                  const flashModel = available.find((m: string) => m.includes('flash'))
+                  if (flashModel) {
+                    await saveSettings({ geminiModel: flashModel })
+                    sendResponse({ success: true, data: { model: flashModel } })
+                  } else if (available.length > 0) {
                     sendResponse({ 
                       success: false, 
-                      error: `Model not found. Your key supports these models: ${available.join(', ')}` 
+                      error: `Your key supports: ${available.slice(0, 5).join(', ')}. Please enable Gemini Flash in AI Studio.` 
                     })
                   } else {
                     sendResponse({ success: false, error: 'Your API key does not support any text generation models.' })
                   }
                 } catch (e) {
-                  sendResponse({ success: false, error: 'Model not found, and failed to list available models.' })
+                  sendResponse({ success: false, error: 'Model not found, and failed to connect to Gemini API.' })
                 }
-              } else if (res.status === 403 || res.status === 401) {
-                sendResponse({ success: false, error: 'Invalid API key: check it in Google AI Studio.' })
-              } else if (res.status === 429) {
-                sendResponse({ success: false, error: 'Rate limit hit: key is valid but quota exceeded.' })
-              } else {
-                const body = await res.json().catch(() => ({}))
-                const msg = (body as { error?: { message?: string } })?.error?.message ?? `HTTP ${res.status}`
-                sendResponse({ success: false, error: msg })
               }
             } catch (e) {
               sendResponse({ success: false, error: `Network error: ${String(e)}` })

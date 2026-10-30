@@ -182,11 +182,11 @@ export default function TeamsPage() {
   }
 
   async function handleRemoveMember(memberId: string) {
-    if (!activeTeam) return
+    if (!activeTeam || !settings?.firebaseUid) return
     try {
       const res = await chrome.runtime.sendMessage({
         type: 'REMOVE_TEAM_MEMBER',
-        payload: { teamId: activeTeam.id, memberId }
+        payload: { teamId: activeTeam.id, memberId, requesterId: settings.firebaseUid }
       })
       if (!res?.success) throw new Error(res?.error || 'Unknown error')
       setMembers(prev => prev.filter(m => m.uid !== memberId))
@@ -290,7 +290,12 @@ export default function TeamsPage() {
               {!loadingShared && sharedBms.length === 0 && (
                 <div className="text-center py-8 text-slate-600 text-xs">No bookmarks shared yet.<br/>Be the first to share one!</div>
               )}
-              {sharedBms.map((bm: any) => (
+              {sharedBms.map((bm: any) => {
+                const sharedByMember = members.find((m: any) => m.uid === bm.addedBy)
+                const sharedByName = bm.addedBy === settings?.firebaseUid
+                  ? 'You'
+                  : sharedByMember?.displayName || sharedByMember?.email || (bm.addedBy ? `${bm.addedBy.slice(0, 8)}…` : null)
+                return (
                 <div key={bm.id} className="glass-card p-2.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
@@ -300,6 +305,11 @@ export default function TeamsPage() {
                         className="text-[10px] text-primary-400 hover:text-primary-300 truncate block">
                         {bm.url}
                       </a>
+                      {sharedByName && (
+                        <p className="text-[10px] text-slate-600 mt-1">
+                          Shared by <span className="text-amber-400 font-semibold">{sharedByName}</span>
+                        </p>
+                      )}
                     </div>
                     {bm.addedBy === settings?.firebaseUid && (
                       <button
@@ -311,7 +321,8 @@ export default function TeamsPage() {
                     )}
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </>
           )}
 
@@ -349,7 +360,8 @@ export default function TeamsPage() {
               {loadingMembers && <p className="text-xs text-slate-500 text-center py-6">Loading members…</p>}
               {!loadingMembers && members.map((m: any) => {
                 const isYou = m.uid === settings?.firebaseUid
-                const isCreator = activeTeam.members[0] === m.uid
+                const isCreator = activeTeam.createdBy === m.uid || activeTeam.members[0] === m.uid
+                const iAmOwner = activeTeam.createdBy === settings?.firebaseUid || activeTeam.members[0] === settings?.firebaseUid
                 return (
                   <div key={m.uid} className="glass-card p-2.5 flex items-center gap-2.5">
                     {/* Avatar - always first letter of UID for consistency */}
@@ -372,8 +384,8 @@ export default function TeamsPage() {
                         <p className="text-[10px] text-slate-500 truncate">{m.displayName || m.email}</p>
                       )}
                     </div>
-                    {/* Remove - only show for others, owner can remove anyone */}
-                    {!isYou && (
+                    {/* Remove - only the team owner can remove others (not themselves) */}
+                    {iAmOwner && !isYou && !isCreator && (
                       <button
                         onClick={() => handleRemoveMember(m.uid)}
                         className="flex-shrink-0 text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-0.5 rounded-lg transition-all"

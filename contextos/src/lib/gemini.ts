@@ -1,9 +1,17 @@
 import type { BrainBookmark } from '../types'
 
-const BASE_URL =
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+async function getModelName(): Promise<string> {
+  try {
+    const res = await chrome.storage.sync.get('settings')
+    if (res?.settings?.geminiModel) return res.settings.geminiModel
+  } catch {}
+  return 'gemini-2.5-flash'
+}
 
 async function callGemini(prompt: string, apiKey: string, isJson = false): Promise<string> {
+  let model = await getModelName()
+  let url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+
   const generationConfig: any = {
     temperature: 0.4,
     maxOutputTokens: 512,
@@ -16,7 +24,7 @@ async function callGemini(prompt: string, apiKey: string, isJson = false): Promi
   if (isJson) {
     generationConfig.responseMimeType = 'application/json'
   }
-  const response = await fetch(`${BASE_URL}?key=${apiKey}`, {
+  let response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -24,6 +32,26 @@ async function callGemini(prompt: string, apiKey: string, isJson = false): Promi
       generationConfig,
     }),
   })
+
+  // If 404 on gemini-2.5-flash, fallback to gemini-3.5-flash for newer keys/accounts
+  if (response.status === 404 && model === 'gemini-2.5-flash') {
+    model = 'gemini-3.5-flash'
+    url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig,
+      }),
+    })
+    if (response.ok) {
+      try {
+        const s = (await chrome.storage.sync.get('settings'))?.settings || {}
+        await chrome.storage.sync.set({ settings: { ...s, geminiModel: model } })
+      } catch {}
+    }
+  }
 
   if (response.status === 429) {
     const retryAfter = response.headers.get('Retry-After') ?? '60'
