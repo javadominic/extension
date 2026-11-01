@@ -410,7 +410,7 @@ export default function SettingsPage() {
       {/* ── 4. AI Key (Gemini) ──────────────────────────────────────── */}
       <section className="surface-card p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-text">Gemini API key</h2>
+          <h2 className="text-sm font-medium text-text">API key</h2>
           <a
             href="https://aistudio.google.com/app/apikey"
             target="_blank"

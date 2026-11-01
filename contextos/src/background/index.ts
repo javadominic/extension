@@ -50,7 +50,6 @@ async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
       try {
         const urlObj = new URL(redirectUrl)
         
-        // Sometimes it's in the hash, sometimes it's in the search params
         const paramsStr = urlObj.hash ? urlObj.hash.substring(1) : urlObj.search.substring(1)
         const params = new URLSearchParams(paramsStr)
         
@@ -72,20 +71,17 @@ async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
         const id_token = params.get('id_token')
         const access_token = params.get('access_token')
 
-        // Pass the token as the access token (2nd param). If it was an id_token, this might fail, so we try both.
         const credential = GoogleAuthProvider.credential(id_token || null, access_token || null)
         
         const result = await signInWithCredential(auth, credential)
         const idToken = await result.user.getIdToken()
         await saveFirebaseToken(idToken)
         
-        // Save the raw Google tokens so we can quickly re-auth the SW if it forgets
         await chrome.storage.local.set({ 
           google_id_token: id_token || null,
           google_access_token: access_token || null 
         })
 
-        // Save user profile to Firestore so teammates can see names
         const { uid, displayName, email, photoURL } = result.user
         try {
           await setDoc(doc(db, 'users', uid), { uid, displayName, email, photoURL }, { merge: true })
@@ -104,7 +100,6 @@ async function ensureAuth() {
   await auth.authStateReady()
   if (auth.currentUser) return true
 
-  // SW forgot the session (IndexedDB failure). Re-hydrate from storage.
   const data = await chrome.storage.local.get(['google_id_token', 'google_access_token'])
   if (data.google_id_token || data.google_access_token) {
     try {
@@ -124,7 +119,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
   
   if (skipGeminiForUrls.has(node.url)) {
     skipGeminiForUrls.delete(node.url)
-    // Completely ignore this event! The SAVE_NEW_PAGE_WITH_NOTE handler will manually save the bookmark to cache and Firebase.
     return
   }
 
@@ -140,7 +134,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
     if (parentId) bm.parentId = parentId
   } catch {}
 
-  // Save the skeleton immediately so the popup can show it instantly
   await upsertBookmark(bm)
 
   if (settings.geminiApiKey) {
@@ -150,9 +143,7 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
       bm.note = note
       bm.tags = tags
     } catch {
-      // Rate limited or API error - bookmark saved without AI note
     }
-    // Update cache with AI notes (or skeleton if AI failed)
     await upsertBookmark(bm)
   }
 
@@ -162,7 +153,6 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
     } catch {}
   }
 
-  // Notify active tab to show toast
   const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
   if (tabs[0]?.id) {
     chrome.tabs.sendMessage(tabs[0].id, {
@@ -243,14 +233,12 @@ async function processAiQueue() {
     } catch (e: any) {
       const msg: string = e?.message ?? ''
       if (msg.startsWith('RATE_LIMIT:')) {
-        // Put the bookmark back so it isn't lost
         aiQueue.unshift(bm)
         const retryAfter = parseInt(msg.split(':')[1] ?? '60', 10)
         chrome.runtime.sendMessage({
           type: 'AI_SYNC_RATE_LIMITED',
           payload: { retryAfter, remaining: aiQueue.length },
         }).catch(() => {})
-        // Stop the queue - resume after Retry-After seconds
         totalAiQueueSize = 0
         isAiSyncing = false
         setTimeout(() => processAiQueue(), retryAfter * 1000)
@@ -285,7 +273,6 @@ chrome.runtime.onMessage.addListener(
 
           case 'START_AI_SYNC': {
             const { bookmarks } = message.payload as { bookmarks: BrainBookmark[] }
-            // Deduplicate: skip bookmarks already in queue OR already processed (have a note)
             const queuedIds = new Set(aiQueue.map(b => b.id))
             const newBms = bookmarks.filter(b => !b.note && !queuedIds.has(b.id))
             aiQueue.push(...newBms)
@@ -338,7 +325,6 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'APPEND_NOTE': {
-            // Appends a new remark to an existing bookmark note
             const { id: aId, newNote, uid: aUid } = message.payload as {
               id: string; newNote: string; uid: string
             }
@@ -358,7 +344,6 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'GET_PAGE_TEXT': {
-            // Proxy: extract page text from the real active tab (not the popup)
             const text = await getActiveTabText()
             sendResponse({ success: true, data: text })
             break
@@ -384,7 +369,6 @@ chrome.runtime.onMessage.addListener(
             } else if (result.uid) {
               const settings = await getSettings()
               settings.firebaseUid = result.uid
-              // Persist profile fields so teammates can see names even without Firestore
               const user = auth.currentUser
               if (user) {
                 settings.displayName = user.displayName ?? undefined
@@ -479,7 +463,6 @@ chrome.runtime.onMessage.addListener(
               const settings = await getSettings()
               const myUid = settings.firebaseUid ?? ''
 
-              // Proactively write the current user's profile so teammates can see their name
               if (myUid && (settings.displayName || settings.email)) {
                 try {
                   await setDoc(doc(db, 'users', myUid), {
@@ -497,7 +480,6 @@ chrome.runtime.onMessage.addListener(
                     const snap = await getDoc(doc(db, 'users', uid))
                     if (snap.exists()) return { uid, ...snap.data() }
                   } catch { /* ignore */ }
-                  // Fallback: if this UID is the current user, use their settings
                   if (uid === myUid && (settings.displayName || settings.email)) {
                     return {
                       uid,
@@ -520,7 +502,6 @@ chrome.runtime.onMessage.addListener(
           case 'REMOVE_TEAM_MEMBER': {
             try {
               const { teamId, memberId, requesterId } = message.payload as { teamId: string; memberId: string; requesterId: string }
-              // Only the team creator (createdBy) may remove members
               const teamSnap = await getDoc(doc(db, 'teams', teamId))
               if (!teamSnap.exists()) throw new Error('Team not found')
               const teamData = teamSnap.data()
@@ -551,7 +532,6 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'OPEN_POPUP': {
-            // Opens the extension popup programmatically (MV3 workaround)
             await chrome.action.openPopup().catch(() => {})
             sendResponse({ success: true })
             break
@@ -559,11 +539,8 @@ chrome.runtime.onMessage.addListener(
 
           case 'ADD_BOOKMARK': {
             const { title, url } = message.payload as { title: string; url: string }
-            // Create the bookmark. The onCreated listener will handle Gemini processing.
             chrome.bookmarks.create({ title, url }, async (newBookmark) => {
-              // Tell the popup to open the modal for this new bookmark immediately
               await setPendingEdit(newBookmark.id)
-              // Once created, immediately open the popup so the user can edit the note
               chrome.action.openPopup().catch(() => {})
             })
             sendResponse({ success: true })
@@ -607,8 +584,6 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'SUGGEST_NOTE': {
-            // All Gemini fetch() calls must go through the background worker.
-            // The popup is blocked by CSP from calling external APIs directly.
             const { url: snUrl, title: snTitle } = message.payload as {
               url: string; title: string
             }
@@ -619,7 +594,6 @@ chrome.runtime.onMessage.addListener(
             }
             const pageText = await getActiveTabText()
             try {
-              // One combined call → note + tags together (saves RPD quota)
               const { note, tags } = await suggestNoteAndTags(snUrl, snTitle, settings.geminiApiKey, pageText)
               if (!note) {
                 sendResponse({ success: false, error: 'EMPTY' })
@@ -641,10 +615,8 @@ chrome.runtime.onMessage.addListener(
 
 
           case 'VALIDATE_GEMINI_KEY': {
-            // Actually ping the Gemini API with the provided key and return the real error.
             const { key } = message.payload as { key: string }
             try {
-              // Try gemini-2.5-flash first (works for Opera/existing keys), then gemini-3.5-flash (works for newer accounts)
               const candidateModels = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.8-flash']
               let validated = false
               let workingModel = 'gemini-2.5-flash'
@@ -685,7 +657,6 @@ chrome.runtime.onMessage.addListener(
               } else if (lastError) {
                 sendResponse({ success: false, error: lastError })
               } else {
-                // If all candidates 404ed, query models to provide a helpful message or fallback
                 try {
                   const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`)
                   const listData = await listRes.json()

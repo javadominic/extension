@@ -1,12 +1,10 @@
 import type { BrainBookmark, MatchResult } from '../types'
 
 const STOPWORDS = new Set([
-  // Articles, conjunctions, prepositions
   'the','a','an','and','or','but','in','on','at','to','for','of','with',
   'is','are','was','were','be','been','being','have','has','had','do',
   'does','did','will','would','could','should','may','might','this','that',
   'it','its','from','by','as','not','no','so','if','when','about','what',
-  // Common question / filler words that appear in search queries but not in notes
   'where','how','why','who','which','can','see','show','find','get','tell',
   'want','need','use','using','used','look','looking','give','make','let',
   'also','just','still','even','like','more','some','any','all','my','me',
@@ -28,11 +26,13 @@ function buildReason(matchedKeywords: string[], tags: string[]): string {
   return 'Related to your search'
 }
 
-/** Returns true if the field contains the keyword OR the keyword is a prefix of a word in the field */
 function fuzzyMatch(field: string, kw: string): boolean {
-  if (field.includes(kw)) return true
-  // prefix match: "stat" matches "stats", "track" matches "tracker"
-  return field.split(/\s+/).some(word => word.startsWith(kw) || kw.startsWith(word))
+  const words = field.split(/\s+/)
+  return words.some(word =>
+    word === kw ||
+    word.startsWith(kw) ||
+    (kw.length > 4 && kw.startsWith(word))
+  )
 }
 
 export function scoreBookmark(query: string, bookmark: BrainBookmark): { score: number; reason: string } {
@@ -59,7 +59,6 @@ export function scoreBookmark(query: string, bookmark: BrainBookmark): { score: 
     if (fuzzyMatch(note, kw)) {
       kwScore += 1.5
     }
-    // URL matching catches cases like "valorant" in the domain/path
     if (fuzzyMatch(url, kw)) {
       kwScore += kwScore === 0 ? 1 : 0.5
     }
@@ -70,9 +69,11 @@ export function scoreBookmark(query: string, bookmark: BrainBookmark): { score: 
     }
   }
 
-  // Normalise by matched count so generic query words ("can", "see", "where")
-  // don't dilute the score of a strong partial match.
-  const normalised = matched.length > 0 ? score / matched.length : 0
+  const minRequired = Math.ceil(keywords.length * 0.25)
+  if (matched.length < minRequired) return { score: 0, reason: '' }
+
+  const coverage  = matched.length / keywords.length
+  const normalised = matched.length > 0 ? (score / matched.length) * Math.sqrt(coverage) : 0
 
   return { score: normalised, reason: buildReason(matched, bookmark.tags) }
 }
