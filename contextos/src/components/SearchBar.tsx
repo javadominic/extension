@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { IconSearch, IconX } from './LucideIcons'
 
 interface Props {
   value: string
@@ -12,11 +13,11 @@ export default function SearchBar({ value, onChange, placeholder, loading }: Pro
 
   return (
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base pointer-events-none">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none flex items-center justify-center">
         {loading ? (
-          <span className="inline-block w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <span className="inline-block w-3.5 h-3.5 border-2 border-amber border-t-transparent rounded-full animate-spin" />
         ) : (
-          '🔍'
+          <IconSearch size={15} strokeWidth={1.5} />
         )}
       </span>
       <input
@@ -26,17 +27,17 @@ export default function SearchBar({ value, onChange, placeholder, loading }: Pro
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder ?? 'Search bookmarks…'}
+        placeholder={placeholder ?? 'Search saves'}
         autoComplete="off"
         autoFocus
       />
       {value && (
         <button
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors p-1"
           onClick={() => { onChange(''); inputRef.current?.focus() }}
           aria-label="Clear search"
         >
-          ×
+          <IconX size={14} strokeWidth={1.5} />
         </button>
       )}
     </div>

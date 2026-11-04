@@ -6,24 +6,24 @@ interface Props {
 export default function HealthBadge({ status, lastChecked }: Props) {
   const configs = {
     alive: {
-      dot: 'bg-emerald-400',
+      dot: 'bg-live',
       text: 'Live',
-      container: 'text-emerald-400',
-      title: 'Link is reachable',
+      container: 'text-live',
+      title: 'Link reachable',
     },
     dead: {
-      dot: 'bg-red-400 animate-pulse',
+      dot: 'bg-dead',
       text: 'Dead',
-      container: 'text-red-400',
+      container: 'text-dead',
       title: lastChecked
-        ? `Link is broken · Last checked: ${new Date(lastChecked).toLocaleDateString()}`
-        : 'Link appears to be broken',
+        ? `Broken · Last checked ${new Date(lastChecked).toLocaleDateString()}`
+        : 'Link unreachable',
     },
     unchecked: {
-      dot: 'bg-slate-500',
+      dot: 'bg-text-muted',
       text: 'Unchecked',
-      container: 'text-slate-500',
-      title: 'Health not yet checked',
+      container: 'text-text-muted',
+      title: 'Health not checked',
     },
   }
 
@@ -31,11 +31,11 @@ export default function HealthBadge({ status, lastChecked }: Props) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 text-[10px] font-semibold ${cfg.container}`}
+      className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${cfg.container}`}
       title={cfg.title}
     >
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      {cfg.text}
+      <span>{cfg.text}</span>
     </span>
   )
 }

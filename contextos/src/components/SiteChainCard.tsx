@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
 import type { SiteGroup, SiteChainNode } from '../lib/chains'
+import {
+  IconLink2,
+  IconNetwork,
+  IconExternalLink,
+  IconPlus,
+  IconChevronDown,
+} from './LucideIcons'
 
 interface Props {
   group: SiteGroup
@@ -13,9 +20,9 @@ interface Props {
 }
 
 const HEALTH_DOT: Record<string, string> = {
-  alive:     'bg-emerald-400',
-  dead:      'bg-red-400 animate-pulse',
-  unchecked: 'bg-slate-500',
+  alive:     'bg-live',
+  dead:      'bg-dead',
+  unchecked: 'bg-text-muted',
 }
 
 function parsePathname(url: string): string {
@@ -46,7 +53,7 @@ export default function SiteChainCard({
   const hiddenCount = group.nodes.length - 5
 
   return (
-    <div className={`glass-card transition-all duration-200 overflow-hidden ${expanded ? 'border-amber-500/50 bg-amber-500/[0.03]' : 'hover:border-slate-700'}`}>
+    <div className={`surface-card transition-colors duration-fast overflow-hidden ${expanded ? 'border-border-control' : 'hover:border-border-control'}`}>
       {/* ── Group Header Card ────────────────────────────────────────── */}
       <div
         className="p-3.5 cursor-pointer select-none space-y-2.5"
@@ -57,43 +64,39 @@ export default function SiteChainCard({
             <img
               src={group.favicon}
               alt=""
-              className="w-5 h-5 rounded flex-shrink-0"
+              className="w-4 h-4 rounded flex-shrink-0"
               onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
             />
             <div className="min-w-0 flex-1">
-              <div className="text-[13px] font-semibold truncate">
+              <div className="text-[13px] font-medium truncate">
                 {isGitHubRepo ? (
                   <>
-                    <span className="text-slate-300 font-normal">{owner}/</span>
-                    <span className="font-bold text-amber-400">{repo}</span>
+                    <span className="text-text-muted font-normal">{owner}/</span>
+                    <span className="text-text font-medium">{repo}</span>
                   </>
                 ) : (
-                  <span className="text-slate-100 font-semibold">{group.domainKey}</span>
+                  <span className="text-text font-medium">{group.domainKey}</span>
                 )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-              <span>🔗</span>
-              <span>{group.totalCount} linked page{group.totalCount > 1 ? 's' : ''}</span>
+            <span className="chip-neutral text-[11px] gap-1 font-mono">
+              <IconLink2 size={12} strokeWidth={1.5} />
+              <span>{group.totalCount} linked</span>
             </span>
 
             <button
               type="button"
-              className="text-slate-400 hover:text-slate-200 p-1 rounded transition-transform"
+              className="text-text-muted hover:text-text p-1 rounded cursor-pointer transition-transform duration-fast"
               title={expanded ? 'Collapse chain' : 'Expand chain'}
             >
-              <svg
-                className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              <IconChevronDown
+                size={14}
+                strokeWidth={1.5}
+                className={`transition-transform duration-fast ${expanded ? 'rotate-180' : ''}`}
+              />
             </button>
           </div>
         </div>
@@ -101,12 +104,12 @@ export default function SiteChainCard({
         {/* ── Breadcrumb path summary ───────────────────────────────── */}
         <div className="flex items-center gap-1.5 text-[11px] overflow-x-auto no-scrollbar pt-0.5">
           {group.breadcrumbs.map((seg, idx) => (
-            <span key={idx} className="flex items-center gap-1.5 flex-shrink-0 font-mono">
-              {idx > 0 && <span className="text-amber-400 font-bold text-[10px]">→</span>}
-              <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
+            <span key={idx} className="flex items-center gap-1 flex-shrink-0 font-mono">
+              {idx > 0 && <span className="text-text-muted text-[10px]">/</span>}
+              <span className={`px-1.5 py-0.5 rounded text-[10px] border ${
                 idx === 0
-                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 font-bold'
-                  : 'bg-slate-800 text-slate-200 border-slate-700/70'
+                  ? 'bg-amber-soft text-amber-text border-amber/30 font-medium'
+                  : 'bg-surface-raised text-text-secondary border-border'
               }`}>
                 {seg}
               </span>
@@ -117,34 +120,34 @@ export default function SiteChainCard({
 
       {/* ── Expanded Chain ───────────────────────────────────────────── */}
       {expanded && (
-        <div className="border-t border-slate-800 bg-black/40 p-3.5 space-y-3 animate-fade-in">
+        <div className="border-t border-border bg-surface-raised/40 p-3.5 space-y-3">
           {/* Action toolbar */}
-          <div className="flex items-center gap-2 flex-wrap pb-2.5 border-b border-slate-800 text-xs">
+          <div className="flex items-center gap-2 flex-wrap pb-2 border-b border-border text-xs">
             <button
               onClick={e => { e.stopPropagation(); onOpenAll(group) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[11px] font-semibold transition-colors"
+              className="btn-secondary text-xs py-1 px-2.5 min-h-[30px]"
               title="Open all pages in new tabs"
             >
-              <span>↗</span>
+              <IconExternalLink size={12} strokeWidth={1.5} />
               <span>Open all ({group.totalCount})</span>
             </button>
 
             <button
               onClick={e => { e.stopPropagation(); onAddToChain(group) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600/70 text-[11px] font-semibold transition-colors shadow-sm"
+              className="btn-secondary text-xs py-1 px-2.5 min-h-[30px]"
               title="Add a page to this chain"
             >
-              <span className="text-amber-400 font-bold">＋</span>
+              <IconPlus size={12} strokeWidth={2} />
               <span>Add to chain</span>
             </button>
 
             <button
               onClick={e => { e.stopPropagation(); onShowInGraph(group) }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600/70 text-[11px] font-semibold transition-colors shadow-sm ml-auto"
+              className="btn-ghost text-xs py-1 px-2.5 min-h-[30px] ml-auto"
               title="View this chain and domain in Graph tab"
             >
-              <span>🕸️</span>
-              <span>Show in Graph</span>
+              <IconNetwork size={12} strokeWidth={1.5} />
+              <span>Graph</span>
             </button>
           </div>
 
@@ -153,50 +156,50 @@ export default function SiteChainCard({
             {visibleNodes.map((node: SiteChainNode, idx: number) => {
               const bm = node.bookmark
               const path = parsePathname(bm.url)
-              const statusDot = HEALTH_DOT[bm.health] ?? 'bg-slate-500'
+              const statusDot = HEALTH_DOT[bm.health] ?? 'bg-text-muted'
               const isFirst = idx === 0
               const isLast = idx === visibleNodes.length - 1
 
               return (
                 <div key={bm.id} className="relative flex items-stretch gap-2.5 text-xs group/node">
                   {/* Timeline Column */}
-                  <div className="relative flex flex-col items-center flex-shrink-0 w-6">
+                  <div className="relative flex flex-col items-center flex-shrink-0 w-5">
                     {/* Top connecting line */}
                     {isFirst ? (
-                      <div className="w-0.5 h-3.5" />
+                      <div className="w-px h-3.5" />
                     ) : (
-                      <div className="w-0.5 h-3.5 bg-amber-500/60" />
+                      <div className="w-px h-3.5 bg-border-control" />
                     )}
 
                     {/* Node Circle */}
                     {node.isRoot ? (
                       <span
-                        className="w-3.5 h-3.5 rounded-full bg-amber-400 ring-4 ring-amber-500/25 flex-shrink-0 shadow-sm"
-                        title="Start of chain (Root page)"
+                        className="w-2.5 h-2.5 rounded-full bg-amber ring-2 ring-amber/20 flex-shrink-0"
+                        title="Root page"
                       />
                     ) : (
                       <span
-                        className="w-3.5 h-3.5 rounded-full border-2 border-amber-400 bg-slate-900 flex-shrink-0 shadow-sm"
-                        title="Linked child page"
+                        className="w-2 h-2 rounded-full border border-amber bg-surface flex-shrink-0"
+                        title="Child page"
                       />
                     )}
 
                     {/* Bottom connecting line */}
                     {!isLast ? (
-                      <div className="w-0.5 flex-1 bg-amber-500/60 min-h-[14px]" />
+                      <div className="w-px flex-1 bg-border-control min-h-[14px]" />
                     ) : (
-                      <div className="w-0.5 flex-1" />
+                      <div className="w-px flex-1" />
                     )}
                   </div>
 
                   {/* Bookmark Node Card */}
-                  <div className="flex-1 min-w-0 bg-[#161616] border border-slate-700/70 rounded-lg p-2.5 hover:border-amber-500/50 transition-colors space-y-1 mb-2.5 shadow-sm">
+                  <div className="flex-1 min-w-0 surface-card p-2.5 hover:border-border-control transition-colors duration-fast space-y-1 mb-2">
                     <div className="flex items-start justify-between gap-2">
                       <a
                         href={bm.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-semibold text-slate-100 hover:text-amber-300 transition-colors text-[12px] line-clamp-2 leading-snug flex-1"
+                        className="font-medium text-text hover:text-amber-text transition-colors text-xs line-clamp-2 leading-snug flex-1"
                         title={bm.title}
                       >
                         {bm.title}
@@ -208,16 +211,16 @@ export default function SiteChainCard({
                           href={bm.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-slate-400 hover:text-amber-300 p-0.5 transition-colors"
+                          className="text-text-muted hover:text-text p-0.5 transition-colors"
                           title="Open in new tab"
                         >
-                          ↗
+                          <IconExternalLink size={12} strokeWidth={1.5} />
                         </a>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 text-[10px]">
-                      <span className="font-mono text-slate-300 truncate max-w-[210px] bg-black/50 px-1 py-0.5 rounded border border-white/5" title={path}>
+                      <span className="font-mono text-text-muted truncate max-w-[210px]" title={path}>
                         {path}
                       </span>
 
@@ -225,7 +228,7 @@ export default function SiteChainCard({
                         {!node.isRoot && (
                           <button
                             onClick={e => { e.stopPropagation(); onUnlink(bm.id) }}
-                            className="text-slate-400 hover:text-red-400 transition-colors font-medium text-[10px] px-1.5 py-0.5 rounded hover:bg-red-500/10"
+                            className="text-text-muted hover:text-danger transition-colors cursor-pointer text-[11px]"
                             title="Unlink from parent"
                           >
                             Unlink
@@ -234,7 +237,7 @@ export default function SiteChainCard({
                         {onEdit && (
                           <button
                             onClick={e => { e.stopPropagation(); onEdit(bm) }}
-                            className="text-slate-300 hover:text-amber-300 transition-colors font-medium text-[10px] px-1.5 py-0.5 rounded hover:bg-white/5"
+                            className="text-text-muted hover:text-amber transition-colors cursor-pointer text-[11px]"
                             title="Edit bookmark note"
                           >
                             Edit
@@ -245,9 +248,9 @@ export default function SiteChainCard({
 
                     {/* "Opened from <parent>" hint */}
                     {node.parent && (
-                      <div className="text-[10px] text-amber-400/90 flex items-center gap-1 pt-0.5 truncate border-t border-white/5 mt-1">
-                        <span>↳ Opened from:</span>
-                        <span className="font-medium text-slate-200 truncate" title={node.parent.title}>
+                      <div className="text-[10px] text-text-muted flex items-center gap-1 pt-0.5 truncate border-t border-border mt-1">
+                        <span className="text-amber-text">From:</span>
+                        <span className="text-text-secondary truncate" title={node.parent.title}>
                           {node.parent.title}
                         </span>
                       </div>
@@ -264,9 +267,9 @@ export default function SiteChainCard({
               <button
                 type="button"
                 onClick={e => { e.stopPropagation(); setShowAllNodes(prev => !prev) }}
-                className="text-xs text-amber-400 hover:text-amber-300 font-semibold px-3 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 transition-all"
+                className="chip-neutral text-xs px-3 py-1 cursor-pointer"
               >
-                {showAllNodes ? '▲ Show less' : `＋ ${hiddenCount} more pages in chain`}
+                {showAllNodes ? 'Show fewer' : `Show ${hiddenCount} more saves in chain`}
               </button>
             </div>
           )}

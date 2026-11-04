@@ -9,31 +9,39 @@ import { getCachedBookmarks, getSettings } from '../../lib/storage'
 import { syncChromeBookmarks, updateNote, deleteBookmark } from '../../lib/bookmarks'
 import { groupBookmarksBySite, unlinkBookmark, type SiteGroup } from '../../lib/chains'
 import type { BrainBookmark } from '../../types'
+import {
+  IconLink2,
+  IconList,
+  IconRefreshCw,
+  IconPlus,
+  IconX,
+  IconBookmark,
+} from '../../components/LucideIcons'
 
 type HealthFilter = 'all' | 'alive' | 'dead' | 'unchecked'
 type SortOrder    = 'newest' | 'oldest' | 'az'
 
 const HEALTH_FILTERS: { id: HealthFilter; label: string; dot: string }[] = [
-  { id: 'all',       label: 'All',       dot: 'bg-slate-400' },
-  { id: 'alive',     label: 'Live',      dot: 'bg-emerald-400' },
-  { id: 'dead',      label: 'Dead',      dot: 'bg-red-400' },
-  { id: 'unchecked', label: 'Unchecked', dot: 'bg-slate-500' },
+  { id: 'all',       label: 'All',       dot: 'bg-text-secondary' },
+  { id: 'alive',     label: 'Live',      dot: 'bg-live' },
+  { id: 'dead',      label: 'Dead',      dot: 'bg-dead' },
+  { id: 'unchecked', label: 'Unchecked', dot: 'bg-text-muted' },
 ]
 
 function SkeletonCard() {
   return (
-    <div className="glass-card p-3.5 animate-pulse">
-      <div className="flex items-start gap-2 mb-2">
-        <div className="w-5 h-5 rounded bg-white/10 flex-shrink-0 mt-0.5" />
+    <div className="surface-card p-3.5 space-y-2">
+      <div className="flex items-start gap-2.5">
+        <div className="w-4 h-4 rounded bg-surface-raised flex-shrink-0 mt-0.5" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3.5 bg-white/10 rounded w-3/4" />
-          <div className="h-3 bg-white/10 rounded w-1/2" />
-          <div className="h-2.5 bg-white/5 rounded w-2/3" />
+          <div className="h-3.5 bg-surface-raised rounded w-3/4" />
+          <div className="h-2.5 bg-surface-raised rounded w-1/3" />
         </div>
       </div>
-      <div className="flex gap-1.5 pl-7">
-        {[40, 55, 35].map(w => (
-          <div key={w} className="h-4 bg-white/10 rounded-full" style={{ width: `${w}px` }} />
+      <div className="h-2 bg-surface-raised rounded w-5/6 ml-6" />
+      <div className="flex gap-1.5 ml-6">
+        {[40, 52, 36].map(w => (
+          <div key={w} className="h-4 bg-surface-raised rounded" style={{ width: `${w}px` }} />
         ))}
       </div>
     </div>
@@ -110,7 +118,7 @@ export default function BookmarksPage() {
         const { retryAfter, remaining } = msg.payload
         setAiProgress(null)
         setToast({
-          msg: `⚠️ Gemini rate limit: ${remaining} bookmark${remaining !== 1 ? 's' : ''} pending. Resuming in ${retryAfter}s.`,
+          msg: `Gemini rate limit: ${remaining} bookmark${remaining !== 1 ? 's' : ''} pending. Resuming in ${retryAfter}s.`,
           type: 'error',
         })
       }
@@ -155,7 +163,7 @@ export default function BookmarksPage() {
       if (missingNotes.length > 0 && settings.geminiApiKey) {
         chrome.runtime.sendMessage({ type: 'START_AI_SYNC', payload: { bookmarks: missingNotes } })
       }
-      setToast({ msg: `Synced ${synced.length} bookmarks!`, type: 'success' })
+      setToast({ msg: `Synced ${synced.length} bookmarks`, type: 'success' })
     } catch (err) {
       setToast({ msg: `Sync failed: ${(err as Error).message}`, type: 'error' })
     } finally {
@@ -169,18 +177,16 @@ export default function BookmarksPage() {
     await updateNote(editing.id, note, tags, settings.firebaseUid ?? '')
     setBookmarks(prev => prev.map(b => b.id === editing.id ? { ...b, note, tags } : b))
     setEditing(null)
-    setToast({ msg: 'Note saved!', type: 'success' })
+    setToast({ msg: 'Note saved', type: 'success' })
   }
 
   const handleDelete = useCallback(async (id: string) => {
     const bm = bookmarks.find(b => b.id === id)
     if (!bm) return
 
-    // Optimistic remove from UI
     setBookmarks(prev => prev.filter(b => b.id !== id))
     setSelectedIds(prev => { const s = new Set(prev); s.delete(id); return s })
 
-    // Set up undo window
     if (undoState) clearTimeout(undoState.timerId)
 
     const timerId = setTimeout(async () => {
@@ -191,7 +197,7 @@ export default function BookmarksPage() {
 
     setUndoState({ bookmark: bm, timerId })
     setToast({
-      msg: 'Bookmark deleted.',
+      msg: 'Bookmark deleted',
       type: 'success',
       onUndo: () => {
         clearTimeout(timerId)
@@ -201,7 +207,7 @@ export default function BookmarksPage() {
           updated.sort((a, b) => b.addedAt - a.addedAt)
           return updated
         })
-        setToast({ msg: 'Bookmark restored!', type: 'success' })
+        setToast({ msg: 'Bookmark restored', type: 'success' })
       },
     })
   }, [bookmarks, undoState])
@@ -296,71 +302,68 @@ export default function BookmarksPage() {
         />
       )}
 
-      <div className="px-3 pt-3 pb-2 border-b border-surface-border space-y-2">
+      <div className="px-3 pt-3 pb-2 border-b border-border space-y-2">
         {aiProgress && (
-          <div className="flex items-center justify-between bg-primary-500/10 border border-primary-500/20 rounded-lg px-3 py-1.5 mb-2">
+          <div className="flex items-center justify-between bg-surface-raised border border-border rounded-btn px-3 py-1.5 mb-2">
             <div className="flex items-center gap-2">
-              <span className="w-3 h-3 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs text-primary-300 font-medium tracking-tight">✨ AI generating notes…</span>
+              <span className="w-3 h-3 border-2 border-amber border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-text-secondary font-medium tracking-tight">Generating notes…</span>
             </div>
-            <span className="text-xs font-bold text-primary-400">
+            <span className="text-xs font-mono text-amber-text">
               {aiProgress.current} / {aiProgress.total}
             </span>
           </div>
         )}
 
         <div className="flex items-center justify-between">
-          <span className="text-xs text-slate-500 font-medium">{bookmarks.length} bookmarks</span>
-          <div className="flex items-center gap-2">
+          <span className="text-xs text-text-muted font-medium">{bookmarks.length} saves</span>
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handleSaveCurrentPage}
-              className="bg-primary-500 hover:bg-primary-600 text-slate-900 flex items-center gap-1.5 text-[11px] font-bold py-1 px-2.5 rounded shadow-sm transition-colors"
+              className="btn-primary text-xs py-1 px-2.5 min-h-[30px]"
             >
-              ＋ Save
+              <IconPlus size={13} strokeWidth={2} />
+              <span>Save</span>
             </button>
 
             <button
               id="group-by-site-btn"
               onClick={() => setGroupBySite(v => !v)}
-              className={`flex items-center gap-1 text-[11px] font-semibold py-1 px-2 rounded border transition-all duration-150 ${
+              className={`flex items-center gap-1.5 text-xs font-medium py-1 px-2 rounded-btn border min-h-[30px] cursor-pointer transition-colors duration-fast ${
                 groupBySite
-                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
-                  : 'border-surface-border text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                  ? 'bg-amber-soft border-amber text-amber-text'
+                  : 'bg-surface-raised border-border text-text-secondary hover:text-text hover:border-border-control'
               }`}
-              title={groupBySite ? 'Flat list' : 'Group by site'}
+              title={groupBySite ? 'Show flat list' : 'Group by domain'}
             >
-              <span>🔗</span>
+              <IconLink2 size={13} strokeWidth={1.5} />
               <span>{groupBySite ? 'Grouped' : 'Group'}</span>
             </button>
 
             <button
               id="bulk-mode-btn"
               onClick={() => { setBulkMode(v => !v); setSelectedIds(new Set()) }}
-              className={`flex items-center gap-1 text-[11px] font-semibold py-1 px-2 rounded border transition-all duration-150 ${
+              className={`flex items-center justify-center w-8 h-8 rounded-btn border transition-colors duration-fast cursor-pointer ${
                 bulkMode
-                  ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
-                  : 'border-surface-border text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                  ? 'bg-amber-soft border-amber text-amber-text'
+                  : 'bg-surface-raised border-border text-text-secondary hover:text-text hover:border-border-control'
               }`}
-              title="Bulk select mode"
+              title="Bulk selection"
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
+              <IconList size={14} strokeWidth={1.5} />
             </button>
 
             <button
               id="sync-btn"
               onClick={handleSync}
               disabled={syncing}
-              className="btn-ghost flex items-center justify-center w-8 h-8 p-0"
-              title={syncing ? 'Syncing…' : 'Sync bookmarks'}
+              className="btn-ghost flex items-center justify-center w-8 h-8 p-0 cursor-pointer"
+              title={syncing ? 'Syncing…' : 'Sync browser bookmarks'}
             >
               {syncing ? (
-                <span className="w-3.5 h-3.5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 border-2 border-text-secondary border-t-transparent rounded-full animate-spin" />
               ) : (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
+                <IconRefreshCw size={14} strokeWidth={1.5} />
               )}
             </button>
           </div>
@@ -368,28 +371,28 @@ export default function BookmarksPage() {
 
         {bulkMode && selectedIds.size > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-400 font-medium">{selectedIds.size} selected</span>
-            <button onClick={handleSelectAll} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-surface-border text-slate-500 hover:text-slate-300 transition-colors">
+            <span className="text-[11px] text-text-muted font-medium">{selectedIds.size} selected</span>
+            <button onClick={handleSelectAll} className="chip-neutral text-[11px]">
               {selectedIds.size === filtered.length ? 'Deselect all' : 'Select all'}
             </button>
-            <button onClick={handleSelectAllDead} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 transition-colors">
+            <button onClick={handleSelectAllDead} className="chip-neutral text-[11px] text-dead hover:text-dead">
               All dead
             </button>
-            <button onClick={handleRecheckSelected} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-surface-border text-slate-500 hover:text-slate-300 transition-colors">
+            <button onClick={handleRecheckSelected} className="chip-neutral text-[11px]">
               Re-check
             </button>
-            <button onClick={handleDeleteSelected} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 transition-colors ml-auto">
+            <button onClick={handleDeleteSelected} className="chip-neutral text-[11px] text-dead hover:text-dead ml-auto">
               Delete ({selectedIds.size})
             </button>
           </div>
         )}
         {bulkMode && selectedIds.size === 0 && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-500">Select bookmarks below</span>
-            <button onClick={handleSelectAll} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-surface-border text-slate-500 hover:text-slate-300 transition-colors">
+            <span className="text-[11px] text-text-muted">Select bookmarks below</span>
+            <button onClick={handleSelectAll} className="chip-neutral text-[11px]">
               Select all
             </button>
-            <button onClick={handleSelectAllDead} className="text-[10px] font-semibold px-2 py-0.5 rounded border border-red-500/30 text-red-400 hover:text-red-300 transition-colors">
+            <button onClick={handleSelectAllDead} className="chip-neutral text-[11px] text-dead hover:text-dead">
               All dead
             </button>
           </div>
@@ -399,19 +402,17 @@ export default function BookmarksPage() {
           <input
             id="filter-bookmarks-input"
             type="text"
-            placeholder="Filter bookmarks…"
+            placeholder="Filter saves…"
             value={filterText}
             onChange={e => setFilterText(e.target.value)}
-            className="input-field text-xs pr-8 py-1.5"
+            className="input-field text-xs pr-8 py-1.5 min-h-[32px]"
           />
           {filterText && (
             <button
               onClick={() => setFilterText('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors p-1"
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <IconX size={13} strokeWidth={1.5} />
             </button>
           )}
         </div>
@@ -423,16 +424,16 @@ export default function BookmarksPage() {
                 key={f.id}
                 id={`filter-${f.id}`}
                 onClick={() => setHealthFilter(f.id)}
-                className={`flex-shrink-0 flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all duration-150 ${
+                className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-btn border transition-colors duration-fast cursor-pointer ${
                   healthFilter === f.id
-                    ? 'bg-primary-500/20 border-primary-500/50 text-primary-300'
-                    : 'border-surface-border text-slate-500 hover:text-slate-300 hover:border-slate-600'
+                    ? 'bg-amber-soft border-amber text-amber-text'
+                    : 'bg-surface border-border text-text-secondary hover:text-text hover:border-border-control'
                 }`}
               >
                 {f.id !== 'all' && (
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${f.dot}`} />
                 )}
-                {f.label}
+                <span>{f.label}</span>
               </button>
             ))}
           </div>
@@ -441,11 +442,11 @@ export default function BookmarksPage() {
             id="sort-select"
             value={sortOrder}
             onChange={e => setSortOrder(e.target.value as SortOrder)}
-            className="flex-shrink-0 text-[11px] bg-surface-card border border-surface-border text-slate-400 rounded-lg px-2 py-1 focus:outline-none focus:border-primary-500 transition-colors cursor-pointer"
+            className="flex-shrink-0 text-xs bg-surface border border-border text-text-secondary rounded-btn px-2 py-1 focus:outline-none focus:border-amber transition-colors cursor-pointer"
           >
             <option value="newest">Newest</option>
             <option value="oldest">Oldest</option>
-            <option value="az">A-Z</option>
+            <option value="az">A–Z</option>
           </select>
         </div>
 
@@ -467,19 +468,21 @@ export default function BookmarksPage() {
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <span className="text-5xl mb-3">🔖</span>
-            <p className="text-slate-300 font-semibold text-sm mb-1">
-              {bookmarks.length === 0 ? 'No bookmarks yet' : 'No matches'}
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <div className="w-10 h-10 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-muted mb-3">
+              <IconBookmark size={18} strokeWidth={1.5} />
+            </div>
+            <p className="text-text font-medium text-sm mb-1">
+              {bookmarks.length === 0 ? 'No bookmarks saved' : 'No matches'}
             </p>
-            <p className="text-slate-500 text-xs leading-relaxed">
+            <p className="text-text-muted text-xs leading-relaxed max-w-xs">
               {bookmarks.length === 0
-                ? 'Click "Sync" to import your bookmarks, or save the current page.'
-                : 'Try clearing the filter or changing health/tag selections.'}
+                ? 'Sync your browser bookmarks to build your archive, or save pages as you browse.'
+                : 'Try adjusting your search filter or health selection.'}
             </p>
             {bookmarks.length === 0 && (
-              <button onClick={handleSync} className="btn-primary mt-4 text-xs">
-                🔄 Sync Now
+              <button onClick={handleSync} className="btn-secondary mt-4 text-xs">
+                Sync bookmarks
               </button>
             )}
           </div>

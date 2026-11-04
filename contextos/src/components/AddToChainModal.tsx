@@ -3,6 +3,7 @@ import type { BrainBookmark } from '../types'
 import type { SiteGroup } from '../lib/chains'
 import { getSettings } from '../lib/storage'
 import { linkBookmark } from '../lib/chains'
+import { IconLink2, IconX } from './LucideIcons'
 
 interface Props {
   group: SiteGroup
@@ -24,7 +25,6 @@ export default function AddToChainModal({
   const [parentTargetId, setParentTargetId] = useState<string>(group.nodes[0]?.bookmark.id ?? '')
   const [saving, setSaving] = useState(false)
 
-  // Potential candidates from other bookmarks not already in this chain
   const candidates = allBookmarks.filter(b => !group.bookmarks.some(gb => gb.id === b.id))
 
   async function handleLinkExisting(e: React.FormEvent) {
@@ -34,7 +34,7 @@ export default function AddToChainModal({
     try {
       const s = await getSettings()
       await linkBookmark(selectedBmId, parentTargetId || group.nodes[0]?.bookmark.id, s.firebaseUid)
-      onSuccess('Bookmark linked to chain!')
+      onSuccess('Bookmark linked to chain')
       onClose()
     } finally {
       setSaving(false)
@@ -55,9 +55,8 @@ export default function AddToChainModal({
           note: '',
         },
       }, () => {
-        // Link to parentTarget
         setTimeout(async () => {
-          onSuccess('Page added and linked to chain!')
+          onSuccess('Page saved and linked to chain')
           onClose()
         }, 500)
       })
@@ -67,30 +66,31 @@ export default function AddToChainModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in">
-      <div className="glass-card w-full max-w-sm p-4 space-y-3.5 bg-[#141414] border-slate-700 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-surface-border pb-2.5">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3">
+      <div className="surface-card w-full max-w-sm p-4 space-y-3.5 border border-border shadow-xl">
+        <div className="flex items-center justify-between border-b border-border pb-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-base">🔗</span>
-            <span className="font-semibold text-slate-100 text-sm">Add to chain: {group.domainKey}</span>
+            <IconLink2 size={15} className="text-amber" strokeWidth={1.5} />
+            <span className="font-medium text-text text-sm">Add to chain: {group.domainKey}</span>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 text-base leading-none p-1"
+            className="text-text-muted hover:text-text p-1 cursor-pointer"
+            aria-label="Close"
           >
-            ×
+            <IconX size={14} strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Tab switch: Link existing vs Add new URL */}
-        <div className="flex gap-1.5 p-0.5 rounded-lg bg-surface-border/50">
+        {/* Tab switch */}
+        <div className="flex gap-1 p-0.5 rounded-btn bg-surface-raised border border-border">
           <button
             type="button"
             onClick={() => setTab('existing')}
-            className={`flex-1 text-xs py-1 rounded-md font-medium transition-all ${
+            className={`flex-1 text-xs py-1 rounded font-medium transition-colors duration-fast cursor-pointer ${
               tab === 'existing'
-                ? 'bg-primary-500/20 text-primary-300 border border-primary-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-amber text-[#1A1405] font-semibold'
+                : 'text-text-secondary hover:text-text'
             }`}
           >
             Link existing save
@@ -98,10 +98,10 @@ export default function AddToChainModal({
           <button
             type="button"
             onClick={() => setTab('new')}
-            className={`flex-1 text-xs py-1 rounded-md font-medium transition-all ${
+            className={`flex-1 text-xs py-1 rounded font-medium transition-colors duration-fast cursor-pointer ${
               tab === 'new'
-                ? 'bg-primary-500/20 text-primary-300 border border-primary-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-amber text-[#1A1405] font-semibold'
+                : 'text-text-secondary hover:text-text'
             }`}
           >
             Add new URL
@@ -110,15 +110,15 @@ export default function AddToChainModal({
 
         {/* Parent selector */}
         <div>
-          <label className="text-[11px] font-semibold text-slate-400 block mb-1">Parent page:</label>
+          <label className="text-xs text-text-muted block mb-1">Parent page in chain</label>
           <select
             value={parentTargetId}
             onChange={e => setParentTargetId(e.target.value)}
-            className="w-full text-xs bg-surface-card border border-surface-border text-slate-200 rounded-lg p-2 focus:border-primary-500 focus:outline-none"
+            className="w-full text-xs bg-surface border border-border text-text rounded-btn p-2 focus:border-amber focus:outline-none cursor-pointer"
           >
             {group.nodes.map(n => (
               <option key={n.bookmark.id} value={n.bookmark.id}>
-                {n.isRoot ? '★ ' : '↳ '}{n.bookmark.title.slice(0, 40)}
+                {n.isRoot ? '[Root] ' : '  ↳ '}{n.bookmark.title.slice(0, 40)}
               </option>
             ))}
           </select>
@@ -127,17 +127,17 @@ export default function AddToChainModal({
         {tab === 'existing' ? (
           <form onSubmit={handleLinkExisting} className="space-y-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-400 block mb-1">Select bookmark to attach:</label>
+              <label className="text-xs text-text-muted block mb-1">Select save to link</label>
               {candidates.length === 0 ? (
-                <p className="text-xs text-slate-500 italic p-2">No other bookmarks available to link.</p>
+                <p className="text-xs text-text-muted italic py-1">No other bookmarks available to link.</p>
               ) : (
                 <select
                   value={selectedBmId}
                   onChange={e => setSelectedBmId(e.target.value)}
-                  className="w-full text-xs bg-surface-card border border-surface-border text-slate-200 rounded-lg p-2 focus:border-primary-500 focus:outline-none"
+                  className="w-full text-xs bg-surface border border-border text-text rounded-btn p-2 focus:border-amber focus:outline-none cursor-pointer"
                   required
                 >
-                  <option value="">-- Choose a bookmark --</option>
+                  <option value="">Choose a save…</option>
                   {candidates.map(b => (
                     <option key={b.id} value={b.id}>
                       {b.title.slice(0, 45)} ({b.domainKey || b.url.slice(0, 25)})
@@ -151,23 +151,23 @@ export default function AddToChainModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-lg border border-surface-border text-xs text-slate-400 hover:text-slate-200"
+                className="btn-ghost text-xs py-1.5 px-3 min-h-[32px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving || !selectedBmId}
-                className="btn-primary text-xs px-3.5 py-1.5"
+                className="btn-primary text-xs py-1.5 px-3.5 min-h-[32px]"
               >
-                {saving ? 'Linking…' : 'Link to Chain'}
+                {saving ? 'Linking…' : 'Link to chain'}
               </button>
             </div>
           </form>
         ) : (
           <form onSubmit={handleAddNew} className="space-y-3">
             <div>
-              <label className="text-[11px] font-semibold text-slate-400 block mb-1">Page URL:</label>
+              <label className="text-xs text-text-muted block mb-1">Page URL</label>
               <input
                 type="url"
                 placeholder="https://example.com/page"
@@ -178,7 +178,7 @@ export default function AddToChainModal({
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-slate-400 block mb-1">Title (optional):</label>
+              <label className="text-xs text-text-muted block mb-1">Title (optional)</label>
               <input
                 type="text"
                 placeholder="Page title"
@@ -192,16 +192,16 @@ export default function AddToChainModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-3 py-1.5 rounded-lg border border-surface-border text-xs text-slate-400 hover:text-slate-200"
+                className="btn-ghost text-xs py-1.5 px-3 min-h-[32px]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving || !newUrl.trim()}
-                className="btn-primary text-xs px-3.5 py-1.5"
+                className="btn-primary text-xs py-1.5 px-3.5 min-h-[32px]"
               >
-                {saving ? 'Adding…' : 'Add & Link'}
+                {saving ? 'Adding…' : 'Add and link'}
               </button>
             </div>
           </form>

@@ -22,117 +22,135 @@ const SEARCH_STYLE = `
   .wrapper * { pointer-events: all; }
 
   @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes collapse {
-    from { opacity: 1; transform: translateY(0) scale(1); }
-    to   { opacity: 0; transform: translateY(6px) scale(0.96); }
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(4px); }
   }
 
   .badge-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #161616;
-    border: 1px solid rgba(232,160,52,0.4);
-    border-radius: 99px;
-    padding: 6px 12px 6px 8px;
+    gap: 8px;
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 8px;
+    padding: 6px 10px;
     cursor: pointer;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    animation: fadeUp 0.4s 0.4s cubic-bezier(0.34,1.2,0.64,1) both;
-    transition: border-color 0.15s, background 0.15s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    animation: fadeUp 0.25s ease-out both;
+    transition: border-color 0.15s, background-color 0.15s;
     font-size: 12px;
-    font-weight: 600;
-    color: #e2e8f0;
+    font-weight: 500;
+    color: #F3EEE4;
   }
-  .badge-pill:hover { border-color: rgba(232,160,52,0.7); background: #1a1a1a; }
+  .badge-pill:hover { border-color: #3D372E; background: #211E18; }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #E5A53A;
+    flex-shrink: 0;
+  }
 
   .badge-count {
-    background: rgba(232,160,52,0.2);
-    color: #e8a034;
-    border-radius: 99px;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 6px;
-    min-width: 18px;
+    background: rgba(229,165,58,0.15);
+    color: #E5A53A;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 5px;
+    min-width: 16px;
     text-align: center;
   }
 
   .panel {
-    background: #161616;
-    border: 1px solid #2a2a2a;
-    border-radius: 14px;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(232,160,52,0.06);
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
     min-width: 280px;
     max-width: 320px;
-    animation: fadeUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
+    animation: fadeUp 0.25s ease-out forwards;
     overflow: hidden;
   }
-  .panel.collapsing { animation: collapse 0.25s ease-in forwards; }
+  .panel.collapsing { animation: collapse 0.2s ease-in forwards; }
 
   .panel-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 11px 14px 9px;
-    border-bottom: 1px solid #222;
+    padding: 10px 12px;
+    background: #14120E;
+    border-bottom: 1px solid #2C2820;
     cursor: grab;
   }
   .panel-header:active { cursor: grabbing; }
   .brand-text {
-    font-size: 13px;
-    font-weight: 700;
-    color: #e8a034;
+    font-size: 12px;
+    font-weight: 600;
+    color: #F3EEE4;
     flex: 1;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    color: #958D7D;
+    font-weight: 400;
+    font-size: 11px;
   }
   .header-close {
     background: none;
     border: none;
-    color: #64748b;
+    color: #958D7D;
     cursor: pointer;
-    font-size: 17px;
-    line-height: 1;
-    padding: 0 2px;
-    transition: color 0.15s;
+    padding: 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background-color 0.15s;
   }
-  .header-close:hover { color: #e2e8f0; }
+  .header-close:hover { color: #F3EEE4; background: rgba(243,238,228,0.06); }
 
   .result-item {
     display: flex;
     gap: 10px;
     align-items: flex-start;
-    padding: 10px 14px;
+    padding: 10px 12px;
     cursor: pointer;
-    transition: background 0.12s;
-    border-bottom: 1px solid #1e1e1e;
+    transition: background-color 0.12s;
+    border-bottom: 1px solid #211E18;
     text-decoration: none;
   }
   .result-item:last-child { border-bottom: none; }
-  .result-item:hover { background: rgba(255,255,255,0.04); }
-  .result-item:focus { outline: 2px solid rgba(232,160,52,0.5); outline-offset: -2px; }
+  .result-item:hover { background: rgba(243,238,228,0.04); }
+  .result-item:focus { outline: 1px solid #E5A53A; outline-offset: -1px; }
 
-  .result-favicon { width: 16px; height: 16px; border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+  .result-favicon { width: 15px; height: 15px; border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
 
   .result-body { flex: 1; min-width: 0; }
-  .result-title { font-size: 12px; font-weight: 600; color: #e2e8f0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; margin-bottom: 2px; }
-  .result-domain { font-size: 10px; color: #475569; margin-bottom: 3px; }
-  .result-reason { font-size: 10px; color: #e8a034; font-weight: 500; }
-  .result-note { font-size: 10px; color: #64748b; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .result-title { font-size: 12px; font-weight: 500; color: #F3EEE4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; margin-bottom: 2px; }
+  .result-domain { font-size: 10px; color: #958D7D; margin-bottom: 3px; }
+  .result-reason { font-size: 10px; color: #E5A53A; font-weight: 500; }
+  .result-note { font-size: 10px; color: #B3AB9B; margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
 
-  .ext-icon { color: #475569; flex-shrink: 0; margin-top: 3px; }
+  .ext-icon { color: #958D7D; flex-shrink: 0; margin-top: 3px; }
 
   .panel-footer {
-    padding: 8px 14px;
-    border-top: 1px solid #1e1e1e;
+    padding: 8px 12px;
+    border-top: 1px solid #2C2820;
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
-    background: #111;
+    background: #14120E;
   }
   .mute-btn {
     font-size: 10px;
-    color: #475569;
+    color: #958D7D;
     background: none;
     border: none;
     cursor: pointer;
@@ -140,10 +158,11 @@ const SEARCH_STYLE = `
     transition: color 0.12s;
     font-family: 'DM Mono', system-ui, sans-serif;
   }
-  .mute-btn:hover { color: #94a3b8; }
-  .sep { color: #2a2a2a; font-size: 10px; }
+  .mute-btn:hover { color: #F3EEE4; }
+  .sep { color: #3D372E; font-size: 10px; }
 
-  .privacy-note { font-size: 9px; color: #334155; margin-left: auto; }
+  .privacy-note { font-size: 10px; color: #958D7D; margin-left: auto; }
+
 `
 
 let currentQuery   = ''
@@ -252,7 +271,7 @@ function buildPanel(results: MatchResult[], query: string) {
   pill.setAttribute('role', 'button')
   pill.setAttribute('tabindex', '0')
   pill.setAttribute('aria-label', `${results.length} related saved bookmark${results.length > 1 ? 's' : ''}`)
-  pill.innerHTML = `<span>🧠</span><span>Related saves</span><span class="badge-count">${results.length}</span>`
+  pill.innerHTML = `<span class="badge-dot"></span><span>Related saves</span><span class="badge-count">${results.length}</span>`
   wrapper.appendChild(pill)
 
   const panel = document.createElement('div')
@@ -263,9 +282,13 @@ function buildPanel(results: MatchResult[], query: string) {
 
   const headerHTML = `
     <div class="panel-header" id="ss-drag-handle" role="toolbar" aria-label="Contextos suggestions panel">
-      <span>🧠</span>
-      <span class="brand-text">Contextos · Related saves</span>
-      <button class="header-close" id="ss-close" aria-label="Close panel">×</button>
+      <span class="badge-dot"></span>
+      <span class="brand-text">Contextos <span class="brand-sub">· Related saves</span></span>
+      <button class="header-close" id="ss-close" aria-label="Close panel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
   `
 
@@ -286,8 +309,8 @@ function buildPanel(results: MatchResult[], query: string) {
           <div class="result-reason">${r.matchReason}</div>
           ${noteSnip}
         </div>
-        <svg class="ext-icon" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        <svg class="ext-icon" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
         </svg>
       </a>
     `
@@ -295,10 +318,10 @@ function buildPanel(results: MatchResult[], query: string) {
 
   const footerHTML = `
     <div class="panel-footer">
-      <button class="mute-btn" id="ss-mute-search" title="Don't show for this search">Mute search</button>
+      <button class="mute-btn" id="ss-mute-search" title="Do not show for this search">Mute search</button>
       <span class="sep">·</span>
-      <button class="mute-btn" id="ss-mute-site" title="Don't show on this site">Mute site</button>
-      <span class="privacy-note">🔒 Local only</span>
+      <button class="mute-btn" id="ss-mute-site" title="Do not show on this site">Mute site</button>
+      <span class="privacy-note">Local only</span>
     </div>
   `
 

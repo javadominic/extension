@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
 import TagBadge from './TagBadge'
+import { IconBrain, IconPlus, IconX } from './LucideIcons'
 
 interface Props {
   bookmark: BrainBookmark
@@ -33,8 +34,6 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
     setLoading(true)
     setAiError('')
     try {
-      // Route through the background service worker - the popup cannot call
-      // external APIs directly due to Manifest V3 CSP restrictions.
       const response = await chrome.runtime.sendMessage({
         type: 'SUGGEST_NOTE',
         payload: { url: bookmark.url, title: bookmark.title },
@@ -42,19 +41,19 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
 
       if (!response?.success) {
         if (response?.error === 'NO_KEY') {
-          setAiError('Add your Gemini API key in Settings → AI tab.')
+          setAiError('Add your Gemini API key in Settings.')
         } else if (response?.error === 'EMPTY') {
-          setAiError('Gemini returned an empty suggestion. Try again or write your own note.')
+          setAiError('No suggestion returned. Write your own note below.')
         } else if (typeof response?.error === 'string' && response.error.startsWith('RATE_LIMIT')) {
           const seconds = parseInt(response.error.split(':')[1] ?? '60', 10)
           const minutes = Math.ceil(seconds / 60)
           setAiError(
             minutes > 1
-              ? `⏳ Gemini rate limit hit: free tier allows ~60 requests/min. Try again in ~${minutes} minutes.`
-              : `⏳ Gemini rate limit hit: try again in ~${seconds} seconds.`
+              ? `Rate limit reached. Try again in ~${minutes} minutes.`
+              : `Rate limit reached. Try again in ~${seconds} seconds.`
           )
         } else {
-          setAiError(`AI error: ${response?.error ?? 'Unknown. Check your API key in Settings.'}`)
+          setAiError(`AI error: ${response?.error ?? 'Check your API key in Settings.'}`)
         }
         return
       }
@@ -102,42 +101,42 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full bg-surface-card border-t border-surface-border rounded-t-2xl p-4 animate-slide-up max-h-[90vh] overflow-y-auto">
-        {/* Drag handle */}
-        <div className="w-10 h-1 rounded-full bg-surface-border mx-auto mb-4" />
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
+      <div className="w-full bg-surface border-t border-border rounded-t-2xl p-4 max-h-[90vh] overflow-y-auto space-y-3">
+        {/* Handle */}
+        <div className="w-10 h-1 rounded-full bg-border mx-auto mb-2" />
 
         {/* Header */}
-        <div className="flex items-center gap-2.5 mb-4">
+        <div className="flex items-center gap-2.5">
           <img
             src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
             alt=""
-            className="w-8 h-8 rounded-lg"
+            className="w-6 h-6 rounded"
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-slate-100 font-semibold text-sm line-clamp-1">{bookmark.title}</p>
-            <p className="text-slate-500 text-[11px] truncate">{domain}</p>
+            <p className="text-text font-medium text-sm line-clamp-1">{bookmark.title}</p>
+            <p className="text-text-muted text-[11px] truncate">{domain}</p>
           </div>
-          <div className="text-xs px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-400 border border-primary-500/25 font-medium">
+          <span className="chip-neutral text-[10px] font-mono">
             {notes.length > 0 ? `${notes.length} note${notes.length > 1 ? 's' : ''}` : 'New note'}
-          </div>
+          </span>
         </div>
 
         {/* Existing notes as cards */}
         {notes.length > 0 && (
-          <div className="mb-3 space-y-2">
-            <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide mb-1">Your notes</p>
+          <div className="space-y-1.5">
+            <p className="text-xs text-text-muted">Saved notes</p>
             {notes.map((n, i) => (
-              <div key={i} className="flex items-start gap-2 bg-surface-hover rounded-xl p-3 border border-surface-border">
-                <span className="text-[11px] font-bold text-primary-400 mt-0.5 shrink-0">#{i + 1}</span>
-                <p className="text-slate-200 text-xs flex-1 leading-relaxed whitespace-pre-wrap">{n}</p>
+              <div key={i} className="flex items-start gap-2 bg-surface-raised rounded-btn p-2.5 border border-border">
+                <span className="text-[10px] font-mono text-amber mt-0.5 shrink-0">#{i + 1}</span>
+                <p className="text-text text-xs flex-1 leading-relaxed whitespace-pre-wrap">{n}</p>
                 <button
                   onClick={() => removeNote(i)}
-                  className="text-slate-600 hover:text-red-400 transition-colors text-sm shrink-0 mt-0.5"
-                  title="Remove this note"
+                  className="text-text-muted hover:text-danger p-0.5 shrink-0"
+                  title="Remove note"
                 >
-                  ×
+                  <IconX size={12} strokeWidth={1.5} />
                 </button>
               </div>
             ))}
@@ -145,53 +144,55 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
         )}
 
         {/* New note input */}
-        <label className="block text-xs text-slate-500 mb-1.5 font-medium">
-          {notes.length > 0 ? 'Add another note' : 'Why did you save this?'}
-        </label>
-        <textarea
-          id="note-textarea"
-          className="input-field resize-none h-20 mb-2"
-          value={newNote}
-          onChange={(e) => setNewNote(e.target.value)}
-          placeholder="Add a personal note…"
-        />
+        <div>
+          <label className="block text-xs text-text-muted mb-1">
+            {notes.length > 0 ? 'Add another note' : 'Personal note'}
+          </label>
+          <textarea
+            id="note-textarea"
+            className="input-field resize-none h-20 text-xs"
+            value={newNote}
+            onChange={(e) => setNewNote(e.target.value)}
+            placeholder="Add context or notes on this page…"
+          />
+        </div>
 
         {/* Regenerate */}
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between">
           <button
             onClick={regenerate}
             disabled={loading}
-            className="text-[11px] text-primary-400 hover:text-primary-300 transition-colors font-medium flex items-center gap-1"
+            className="text-xs text-amber-text hover:underline font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             {loading ? (
-              <span className="inline-block w-3 h-3 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-            ) : '✨'}
-            {loading ? 'Generating…' : 'AI suggest'}
+              <span className="inline-block w-3 h-3 border-2 border-amber border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <IconBrain size={13} strokeWidth={1.5} />
+            )}
+            <span>{loading ? 'Suggesting…' : 'AI suggest note'}</span>
           </button>
           {newNote.trim() && (
             <button
               onClick={addNote}
-              className="text-[11px] text-slate-400 hover:text-slate-200 transition-colors font-medium border border-surface-border rounded-lg px-2 py-1"
+              className="btn-secondary text-xs py-1 px-2 min-h-[28px]"
             >
-              + Add note
+              Add note
             </button>
           )}
         </div>
 
-        {/* AI error */}
         {aiError && (
-          <p className="text-[11px] text-amber-400 mb-3">{aiError}</p>
+          <p className="text-xs text-dead leading-snug">{aiError}</p>
         )}
 
         {/* Tags */}
-        <div className="mb-4">
-          <p className="text-xs text-slate-500 mb-2 font-medium">Tags</p>
+        <div className="space-y-1.5 pt-1 border-t border-border">
+          <p className="text-xs text-text-muted">Tags</p>
 
-          {/* Tag input */}
-          <div className="flex gap-1.5 mb-2">
+          <div className="flex gap-1.5">
             <input
-              className="input-field flex-1 h-8 text-xs py-1"
-              placeholder="Add a tag and press Enter…"
+              className="input-field flex-1 text-xs py-1 min-h-[32px]"
+              placeholder="Add tag and press Enter"
               value={tagInput}
               onChange={e => setTagInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
@@ -199,48 +200,47 @@ export default function AddNoteModal({ bookmark, onSave, onSkip }: Props) {
             <button
               onClick={addCustomTag}
               disabled={!tagInput.trim()}
-              className="text-[11px] font-semibold text-primary-400 hover:text-primary-300 border border-primary-500/30 hover:border-primary-400/50 px-3 py-1 rounded-lg transition-all disabled:opacity-40"
+              className="btn-secondary text-xs py-1 px-3 min-h-[32px] disabled:opacity-40"
             >
-              + Add
+              Add
             </button>
           </div>
 
-          {/* Tag pills - tap to remove */}
           {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5 pt-1">
               {tags.map((tag) => (
                 <button
                   key={tag}
                   onClick={() => toggleTag(tag)}
-                  className="flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-500/15 text-primary-300 border border-primary-500/25 hover:bg-red-500/15 hover:text-red-300 hover:border-red-500/30 transition-all group"
-                  title="Tap to remove"
+                  className="chip-neutral text-xs hover:border-danger hover:text-danger group cursor-pointer"
+                  title="Remove tag"
                 >
-                  #{tag}
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">×</span>
+                  <span>#{tag}</span>
+                  <span className="text-text-muted group-hover:text-danger text-[10px]">×</span>
                 </button>
               ))}
             </div>
           )}
           {tags.length === 0 && (
-            <p className="text-[11px] text-slate-600 italic">No tags yet: add some above or use AI suggest</p>
+            <p className="text-[11px] text-text-muted">No tags added yet</p>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-2">
           <button
             id="modal-skip-btn"
             onClick={onSkip}
-            className="btn-ghost flex-1"
+            className="btn-ghost flex-1 text-xs"
           >
-            Skip
+            Cancel
           </button>
           <button
             id="modal-save-btn"
             onClick={handleSave}
-            className="btn-primary flex-1"
+            className="btn-primary flex-1 text-xs"
           >
-            Save
+            Save note
           </button>
         </div>
       </div>

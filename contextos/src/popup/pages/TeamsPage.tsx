@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react'
 import Toast from '../../components/Toast'
 import { getSettings, saveSettings, getCachedBookmarks } from '../../lib/storage'
 import type { BrainBookmark, AppSettings, TeamData } from '../../types'
-import teamsIcon from '../../assets/icons/tab-teams.png'
+import {
+  IconUsers,
+  IconChevronLeft,
+  IconChevronRight,
+  IconPlus,
+  IconCopy,
+  IconCheck,
+} from '../../components/LucideIcons'
 
 export default function TeamsPage() {
   const [settings,     setSettings]     = useState<AppSettings | null>(null)
@@ -51,7 +58,6 @@ export default function TeamsPage() {
     setLoadingShared(true)
     setLoadingMembers(true)
     
-    // Clear notification badge for this team by updating lastSeenSharedCount
     if (settings) {
       const counts = settings.lastSeenSharedCount || {}
       if (counts[t.id] !== t.sharedBookmarks.length) {
@@ -95,7 +101,7 @@ export default function TeamsPage() {
       setTeams(prev => [...prev, newTeam])
       setTeamName('')
       await openTeam(newTeam)
-      setToast({ msg: 'Team created!', type: 'success' })
+      setToast({ msg: 'Team created', type: 'success' })
     } catch (err) {
       setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
     } finally {
@@ -106,7 +112,7 @@ export default function TeamsPage() {
   async function handleJoinTeam() {
     if (!joinCode.trim() || !settings?.firebaseUid) return
     const alreadyIn = (settings.teamIds ?? []).includes(joinCode.trim())
-    if (alreadyIn) { setToast({ msg: 'Already in this team!', type: 'error' }); return }
+    if (alreadyIn) { setToast({ msg: 'Already a member of this team', type: 'error' }); return }
     setLoading(true)
     try {
       const res = await chrome.runtime.sendMessage({
@@ -121,7 +127,7 @@ export default function TeamsPage() {
       setTeams(prev => [...prev, res.data as TeamData])
       setJoinCode('')
       await openTeam(res.data as TeamData)
-      setToast({ msg: 'Joined team!', type: 'success' })
+      setToast({ msg: 'Joined team', type: 'success' })
     } catch (err) {
       setToast({ msg: `Error: ${(err as Error).message}`, type: 'error' })
     } finally {
@@ -210,10 +216,14 @@ export default function TeamsPage() {
   // ─── Not signed in ───────────────────────────────────────────────────────────
   if (!settings?.firebaseUid) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-3">
-        <img src={teamsIcon} alt="Teams" className="w-16 h-16 object-contain drop-shadow-lg mb-1" />
-        <p className="text-slate-200 font-semibold text-sm">Sign in to use Teams</p>
-        <p className="text-slate-500 text-xs">Go to Settings and sign in with Google to collaborate.</p>
+      <div className="flex flex-col items-center justify-center h-full px-6 text-center gap-3 py-12">
+        <div className="w-12 h-12 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-muted">
+          <IconUsers size={22} strokeWidth={1.5} />
+        </div>
+        <p className="text-text font-medium text-sm">Sign in to collaborate</p>
+        <p className="text-text-muted text-xs leading-relaxed max-w-xs">
+          Open Settings and connect with Google to create teams and share bookmark collections.
+        </p>
       </div>
     )
   }
@@ -225,70 +235,86 @@ export default function TeamsPage() {
         {toast && <Toast message={toast.msg} type={toast.type} onDismiss={() => setToast(null)} />}
 
         {/* Header */}
-        <div className="px-3 pt-3 pb-2 border-b border-surface-border">
-          <div className="flex items-center gap-2 mb-2">
-            <button onClick={() => { setView('list'); setActiveTeam(null) }}
-              className="text-slate-400 hover:text-slate-200 text-sm transition-colors">
-              ← Back
+        <div className="px-3 pt-3 pb-2 border-b border-border space-y-2.5">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => { setView('list'); setActiveTeam(null) }}
+              className="flex items-center gap-1 text-xs text-text-secondary hover:text-text cursor-pointer transition-colors"
+            >
+              <IconChevronLeft size={14} strokeWidth={1.5} />
+              <span>Back</span>
             </button>
-            <div className="flex-1" />
-            <button onClick={() => handleLeaveTeam(activeTeam.id)}
-              className="text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 px-2 py-1 rounded-lg transition-all">
-              Leave
+            <button
+              onClick={() => handleLeaveTeam(activeTeam.id)}
+              className="text-xs text-dead hover:underline cursor-pointer font-medium"
+            >
+              Leave team
             </button>
           </div>
 
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center p-1.5 flex-shrink-0">
-              <img src={teamsIcon} alt="" className="w-full h-full object-contain" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-btn bg-surface-raised border border-border flex items-center justify-center text-amber flex-shrink-0">
+              <IconUsers size={16} strokeWidth={1.5} />
             </div>
-            <div>
-              <p className="font-bold text-slate-100 text-sm">{activeTeam.name}</p>
-              <p className="text-xs text-slate-500">{activeTeam.members.length} member{activeTeam.members.length !== 1 ? 's' : ''}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-text text-sm truncate">{activeTeam.name}</p>
+              <p className="text-[11px] text-text-muted">{activeTeam.members.length} member{activeTeam.members.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-surface-border/50 rounded-lg px-2.5 py-1.5 mb-2">
-            <p className="text-[10px] text-slate-500 flex-shrink-0">Team ID:</p>
-            <p className="text-[10px] font-mono text-slate-300 flex-1 truncate select-all">{activeTeam.id}</p>
-            <button onClick={handleCopyId}
-              className="flex-shrink-0 text-[10px] font-semibold text-primary-400 hover:text-primary-300 transition-colors">
-              {copied ? '✓ Copied' : 'Copy'}
+          <div className="flex items-center gap-2 bg-surface-raised border border-border rounded-btn px-2.5 py-1.5">
+            <span className="text-[11px] text-text-muted flex-shrink-0">Team ID:</span>
+            <span className="text-[11px] font-mono text-text flex-1 truncate select-all">{activeTeam.id}</span>
+            <button
+              onClick={handleCopyId}
+              className="flex-shrink-0 text-xs font-medium text-amber-text hover:underline cursor-pointer flex items-center gap-1"
+            >
+              {copied ? <IconCheck size={12} className="text-live" strokeWidth={2} /> : <IconCopy size={12} />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1">
-            {(['shared', 'members', 'share'] as const).map(tab => (
-              <button key={tab} onClick={() => {
-                setDetailTab(tab)
-                if (tab === 'shared' && activeTeam && settings) {
-                  const counts = settings.lastSeenSharedCount || {}
-                  if (counts[activeTeam.id] !== activeTeam.sharedBookmarks.length) {
-                    const newSettings = { ...settings, lastSeenSharedCount: { ...counts, [activeTeam.id]: activeTeam.sharedBookmarks.length } }
-                    setSettings(newSettings)
-                    saveSettings(newSettings).catch(() => {})
-                  }
-                }
-              }}
-                className={`flex-1 text-[10px] font-semibold py-1 rounded-lg transition-all ${
-                  detailTab === tab
-                    ? 'bg-primary-600/30 text-primary-300 border border-primary-500/30'
-                    : 'text-slate-500 hover:text-slate-300'
-                }`}>
-                {tab === 'shared' ? `📥 Shared (${sharedBms.length})` : tab === 'members' ? `👥 Members (${activeTeam.members.length})` : '📤 Share'}
-              </button>
-            ))}
+          <div className="flex gap-1 p-0.5 rounded-btn bg-surface-raised border border-border">
+            {(['shared', 'members', 'share'] as const).map(tab => {
+              const isActive = detailTab === tab
+              const label = tab === 'shared' ? `Shared (${sharedBms.length})` : tab === 'members' ? `Members (${activeTeam.members.length})` : 'Share save'
+              return (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setDetailTab(tab)
+                    if (tab === 'shared' && activeTeam && settings) {
+                      const counts = settings.lastSeenSharedCount || {}
+                      if (counts[activeTeam.id] !== activeTeam.sharedBookmarks.length) {
+                        const newSettings = { ...settings, lastSeenSharedCount: { ...counts, [activeTeam.id]: activeTeam.sharedBookmarks.length } }
+                        setSettings(newSettings)
+                        saveSettings(newSettings).catch(() => {})
+                      }
+                    }
+                  }}
+                  className={`flex-1 text-xs py-1 rounded font-medium transition-colors duration-fast cursor-pointer ${
+                    isActive
+                      ? 'bg-amber text-[#1A1405] font-semibold'
+                      : 'text-text-secondary hover:text-text'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Tab content */}
-        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+        <div className="flex-1 overflow-y-auto px-3 py-2.5 space-y-2">
           {detailTab === 'shared' && (
             <>
-              {loadingShared && <p className="text-xs text-slate-500 text-center py-6">Loading shared bookmarks…</p>}
+              {loadingShared && <p className="text-xs text-text-muted text-center py-8">Loading shared bookmarks…</p>}
               {!loadingShared && sharedBms.length === 0 && (
-                <div className="text-center py-8 text-slate-600 text-xs">No bookmarks shared yet.<br/>Be the first to share one!</div>
+                <div className="text-center py-10 text-text-muted text-xs leading-relaxed">
+                  No bookmarks shared with this team yet.
+                </div>
               )}
               {sharedBms.map((bm: any) => {
                 const sharedByMember = members.find((m: any) => m.uid === bm.addedBy)
@@ -296,31 +322,35 @@ export default function TeamsPage() {
                   ? 'You'
                   : sharedByMember?.displayName || sharedByMember?.email || (bm.addedBy ? `${bm.addedBy.slice(0, 8)}…` : null)
                 return (
-                <div key={bm.id} className="glass-card p-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-200 truncate">{bm.title}</p>
-                      <p className="text-[10px] text-slate-500 truncate mb-1">{bm.note || bm.url}</p>
-                      <a href={bm.url} target="_blank" rel="noreferrer"
-                        className="text-[10px] text-primary-400 hover:text-primary-300 truncate block">
-                        {bm.url}
-                      </a>
-                      {sharedByName && (
-                        <p className="text-[10px] text-slate-600 mt-1">
-                          Shared by <span className="text-amber-400 font-semibold">{sharedByName}</span>
-                        </p>
+                  <div key={bm.id} className="surface-card p-3 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-text truncate">{bm.title}</p>
+                        <p className="text-[11px] text-text-muted truncate">{bm.note || bm.url}</p>
+                        <a
+                          href={bm.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-amber-text hover:underline truncate block mt-0.5 font-mono"
+                        >
+                          {bm.url}
+                        </a>
+                        {sharedByName && (
+                          <p className="text-[10px] text-text-muted mt-1">
+                            Shared by <span className="text-text font-medium">{sharedByName}</span>
+                          </p>
+                        )}
+                      </div>
+                      {bm.addedBy === settings?.firebaseUid && (
+                        <button
+                          onClick={() => handleUnshare(bm.id)}
+                          className="text-[11px] text-text-muted hover:text-danger cursor-pointer flex-shrink-0"
+                        >
+                          Unshare
+                        </button>
                       )}
                     </div>
-                    {bm.addedBy === settings?.firebaseUid && (
-                      <button
-                        onClick={() => handleUnshare(bm.id)}
-                        className="flex-shrink-0 text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-0.5 rounded-lg transition-all"
-                      >
-                        Unshare
-                      </button>
-                    )}
                   </div>
-                </div>
                 )
               })}
             </>
@@ -328,26 +358,30 @@ export default function TeamsPage() {
 
           {detailTab === 'share' && (
             <>
-              <p className="text-xs text-slate-500 font-medium mb-1.5">Tap a bookmark to share it with the team</p>
+              <p className="text-xs text-text-muted font-medium mb-1">Select a save to share</p>
               {bookmarks.length === 0 && (
-                <div className="text-center py-8 text-slate-600 text-xs">No bookmarks to share yet.</div>
+                <div className="text-center py-10 text-text-muted text-xs">No saves available to share.</div>
               )}
               {bookmarks.slice(0, 20).map((bm) => {
                 const isShared = activeTeam.sharedBookmarks.includes(bm.id)
                 return (
-                  <div key={bm.id}
-                    className={`glass-card p-2.5 flex items-center gap-2.5 transition-all duration-150 ${isShared ? 'border-primary-500/30' : ''}`}>
+                  <div
+                    key={bm.id}
+                    className={`surface-card p-2.5 flex items-center gap-2.5 transition-colors duration-fast ${
+                      isShared ? 'border-amber/40 bg-amber-soft' : ''
+                    }`}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-200 truncate">{bm.title}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{bm.note || bm.url}</p>
+                      <p className="text-xs font-medium text-text truncate">{bm.title}</p>
+                      <p className="text-[11px] text-text-muted truncate">{bm.note || bm.url}</p>
                     </div>
-                    <button onClick={() => handleShareBookmark(bm)}
-                      className={`flex-shrink-0 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all duration-150 ${
-                        isShared
-                          ? 'bg-primary-500/20 border-primary-500/40 text-primary-300'
-                          : 'border-surface-border text-slate-500 hover:border-primary-500/40 hover:text-primary-400'
-                      }`}>
-                      {isShared ? '✓ Shared' : 'Share'}
+                    <button
+                      onClick={() => handleShareBookmark(bm)}
+                      className={`chip-neutral text-xs flex-shrink-0 cursor-pointer ${
+                        isShared ? 'chip-selected' : ''
+                      }`}
+                    >
+                      {isShared ? 'Shared' : 'Share'}
                     </button>
                   </div>
                 )
@@ -357,38 +391,44 @@ export default function TeamsPage() {
 
           {detailTab === 'members' && (
             <>
-              {loadingMembers && <p className="text-xs text-slate-500 text-center py-6">Loading members…</p>}
+              {loadingMembers && <p className="text-xs text-text-muted text-center py-8">Loading members…</p>}
               {!loadingMembers && members.map((m: any) => {
                 const isYou = m.uid === settings?.firebaseUid
                 const isCreator = activeTeam.createdBy === m.uid || activeTeam.members[0] === m.uid
                 const iAmOwner = activeTeam.createdBy === settings?.firebaseUid || activeTeam.members[0] === settings?.firebaseUid
                 return (
-                  <div key={m.uid} className="glass-card p-2.5 flex items-center gap-2.5">
-                    {/* Avatar - always first letter of UID for consistency */}
-                    {m.photoURL
-                      ? <img src={m.photoURL} className="w-8 h-8 rounded-full flex-shrink-0" alt="" />
-                      : <div className="w-8 h-8 rounded-full bg-primary-600/20 border border-primary-500/30 flex items-center justify-center text-xs font-mono flex-shrink-0">
-                          {m.uid.slice(0, 2).toUpperCase()}
-                        </div>
-                    }
-                    {/* Info - UID is always primary, name/email secondary */}
+                  <div key={m.uid} className="surface-card p-2.5 flex items-center gap-2.5">
+                    {m.photoURL ? (
+                      <img src={m.photoURL} className="w-7 h-7 rounded-full flex-shrink-0" alt="" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-surface-raised border border-border flex items-center justify-center text-[10px] font-mono text-text flex-shrink-0">
+                        {m.uid.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-mono font-semibold text-slate-200 truncate">
+                        <p className="text-xs font-mono text-text truncate">
                           {m.uid.slice(0, 16)}…
                         </p>
-                        {isYou && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary-500/20 text-primary-300 border border-primary-500/30">You</span>}
-                        {isCreator && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">Owner</span>}
+                        {isYou && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface-raised border border-border text-text-secondary">
+                            You
+                          </span>
+                        )}
+                        {isCreator && (
+                          <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-soft border border-amber/30 text-amber-text">
+                            Owner
+                          </span>
+                        )}
                       </div>
                       {(m.displayName || m.email) && (
-                        <p className="text-[10px] text-slate-500 truncate">{m.displayName || m.email}</p>
+                        <p className="text-[11px] text-text-muted truncate">{m.displayName || m.email}</p>
                       )}
                     </div>
-                    {/* Remove - only the team owner can remove others (not themselves) */}
                     {iAmOwner && !isYou && !isCreator && (
                       <button
                         onClick={() => handleRemoveMember(m.uid)}
-                        className="flex-shrink-0 text-[10px] text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-400/50 px-2 py-0.5 rounded-lg transition-all"
+                        className="text-[11px] text-text-muted hover:text-danger cursor-pointer flex-shrink-0"
                       >
                         Remove
                       </button>
@@ -406,35 +446,57 @@ export default function TeamsPage() {
   // ─── Add team view ────────────────────────────────────────────────────────────
   if (view === 'add') {
     return (
-      <div className="flex flex-col h-full px-3 pt-4 pb-3 gap-4">
+      <div className="flex flex-col h-full px-3 pt-3 pb-3 gap-3">
         {toast && <Toast message={toast.msg} type={toast.type} onDismiss={() => setToast(null)} />}
 
         <div className="flex items-center gap-2 mb-1">
-          <button onClick={() => setView('list')} className="text-slate-400 hover:text-slate-200 text-sm transition-colors">
-            ← Back
+          <button
+            onClick={() => setView('list')}
+            className="flex items-center gap-1 text-xs text-text-secondary hover:text-text cursor-pointer transition-colors"
+          >
+            <IconChevronLeft size={14} strokeWidth={1.5} />
+            <span>Back</span>
           </button>
-          <p className="text-slate-200 font-bold text-sm">Add a Team</p>
+          <span className="text-text font-medium text-sm">Add a team</span>
         </div>
 
-        <div className="glass-card p-3 space-y-2">
-          <p className="text-xs font-semibold text-slate-400">Create a new team</p>
-          <input className="input-field" placeholder="Team name…" value={teamName} onChange={e => setTeamName(e.target.value)} />
-          <button onClick={handleCreateTeam} disabled={loading || !teamName.trim()} className="btn-primary w-full">
-            {loading ? 'Creating…' : 'Create Team'}
+        <div className="surface-card p-3.5 space-y-2.5">
+          <p className="text-xs font-medium text-text">Create a team</p>
+          <input
+            className="input-field"
+            placeholder="Team name"
+            value={teamName}
+            onChange={e => setTeamName(e.target.value)}
+          />
+          <button
+            onClick={handleCreateTeam}
+            disabled={loading || !teamName.trim()}
+            className="btn-primary w-full text-xs"
+          >
+            {loading ? 'Creating…' : 'Create team'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-surface-border" />
-          <span className="text-xs text-slate-600">or</span>
-          <div className="flex-1 h-px bg-surface-border" />
+        <div className="flex items-center gap-2 my-1">
+          <div className="flex-1 h-px bg-border" />
+          <span className="text-xs text-text-muted">or</span>
+          <div className="flex-1 h-px bg-border" />
         </div>
 
-        <div className="glass-card p-3 space-y-2">
-          <p className="text-xs font-semibold text-slate-400">Join by team ID</p>
-          <input className="input-field" placeholder="Paste Team ID…" value={joinCode} onChange={e => setJoinCode(e.target.value)} />
-          <button onClick={handleJoinTeam} disabled={loading || !joinCode.trim()} className="btn-ghost w-full">
-            {loading ? 'Joining…' : 'Join Team'}
+        <div className="surface-card p-3.5 space-y-2.5">
+          <p className="text-xs font-medium text-text">Join by team ID</p>
+          <input
+            className="input-field font-mono text-xs"
+            placeholder="Paste team ID"
+            value={joinCode}
+            onChange={e => setJoinCode(e.target.value)}
+          />
+          <button
+            onClick={handleJoinTeam}
+            disabled={loading || !joinCode.trim()}
+            className="btn-secondary w-full text-xs"
+          >
+            {loading ? 'Joining…' : 'Join team'}
           </button>
         </div>
       </div>
@@ -446,47 +508,59 @@ export default function TeamsPage() {
     <div className="flex flex-col h-full">
       {toast && <Toast message={toast.msg} type={toast.type} onDismiss={() => setToast(null)} />}
 
-      <div className="px-3 pt-3 pb-2 border-b border-surface-border flex items-center justify-between">
-        <p className="text-slate-200 font-bold text-sm">My Teams</p>
-        <button onClick={() => setView('add')}
-          className="text-[11px] font-semibold text-primary-400 hover:text-primary-300 border border-primary-500/30 hover:border-primary-400/50 px-2.5 py-1 rounded-lg transition-all">
-          + Add Team
+      <div className="px-3 pt-3 pb-2 border-b border-border flex items-center justify-between">
+        <p className="text-text font-medium text-sm">Teams</p>
+        <button
+          onClick={() => setView('add')}
+          className="btn-secondary text-xs py-1 px-2.5 min-h-[30px]"
+        >
+          <IconPlus size={13} strokeWidth={2} />
+          <span>Add team</span>
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2.5 space-y-2">
         {teams.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
-            <img src={teamsIcon} alt="Teams" className="w-16 h-16 object-contain drop-shadow-lg mb-1" />
-            <p className="text-slate-400 text-sm font-semibold">No teams yet</p>
-            <p className="text-slate-600 text-xs">Tap "+ Add Team" to create or join one</p>
+          <div className="flex flex-col items-center justify-center h-full gap-2.5 text-center px-6 py-12">
+            <div className="w-10 h-10 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-muted mb-2">
+              <IconUsers size={18} strokeWidth={1.5} />
+            </div>
+            <p className="text-text font-medium text-sm">No teams joined</p>
+            <p className="text-text-muted text-xs leading-relaxed max-w-xs">
+              Create a team or join using an invite code to share and curate saves with others.
+            </p>
           </div>
         )}
         {teams.map(t => {
           const newCount = t.sharedBookmarks.length - (settings?.lastSeenSharedCount?.[t.id] || 0)
           return (
-            <button key={t.id} onClick={() => openTeam(t)}
-              className="glass-card p-3 w-full flex items-center gap-3 text-left hover:border-primary-500/30 transition-all">
-              <div className="w-9 h-9 rounded-xl bg-primary-600/20 border border-primary-500/30 flex items-center justify-center p-1.5 flex-shrink-0 relative">
-                <img src={teamsIcon} alt="" className="w-full h-full object-contain" />
+            <button
+              key={t.id}
+              onClick={() => openTeam(t)}
+              className="surface-card p-3 w-full flex items-center gap-3 text-left hover:border-border-control transition-colors duration-fast cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-btn bg-surface-raised border border-border flex items-center justify-center text-text flex-shrink-0 relative">
+                <IconUsers size={16} strokeWidth={1.5} />
                 {newCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 border border-surface-card text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="absolute -top-1 -right-1 bg-dead text-white text-[9px] font-medium w-4 h-4 rounded-full flex items-center justify-center">
                     {newCount > 9 ? '9+' : newCount}
                   </span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-semibold text-slate-100 text-sm truncate">{t.name}</p>
+                  <p className="font-medium text-text text-sm truncate">{t.name}</p>
                   {newCount > 0 && (
-                    <span className="bg-red-500/20 text-red-400 border border-red-500/30 text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                    <span className="bg-amber-soft text-amber-text border border-amber/30 text-[10px] font-medium px-1.5 py-0.2 rounded">
                       {newCount} new
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-slate-500">{t.members.length} member{t.members.length !== 1 ? 's' : ''} · {t.sharedBookmarks.length} shared</p>
+                <p className="text-xs text-text-muted">
+                  {t.members.length} member{t.members.length !== 1 ? 's' : ''} · {t.sharedBookmarks.length} shared
+                </p>
               </div>
-              <span className="text-slate-600 text-xs">›</span>
+              <IconChevronRight size={14} className="text-text-muted" strokeWidth={1.5} />
             </button>
           )
         })}

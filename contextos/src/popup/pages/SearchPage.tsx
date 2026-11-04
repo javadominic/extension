@@ -8,6 +8,7 @@ import { semanticSearch } from '../../lib/gemini'
 import { updateNote, deleteBookmark } from '../../lib/bookmarks'
 import { getChainLength } from '../../lib/chains'
 import type { BrainBookmark } from '../../types'
+import { IconSearch } from '../../components/LucideIcons'
 
 export default function SearchPage() {
   const [query,     setQuery]     = useState('')
@@ -70,7 +71,7 @@ export default function SearchPage() {
     await updateNote(editing.id, note, tags, settings.firebaseUid ?? '')
     setAll((prev) => prev.map((b) => b.id === editing.id ? { ...b, note, tags } : b))
     setEditing(null)
-    setToast({ msg: 'Note saved!', type: 'success' })
+    setToast({ msg: 'Note saved', type: 'success' })
   }
 
   async function handleDelete(id: string) {
@@ -78,7 +79,7 @@ export default function SearchPage() {
     await deleteBookmark(id, settings.firebaseUid ?? '')
     setAll((prev) => prev.filter((b) => b.id !== id))
     setResults((prev) => prev.filter((b) => b.id !== id))
-    setToast({ msg: 'Bookmark deleted.', type: 'success' })
+    setToast({ msg: 'Bookmark deleted', type: 'success' })
   }
 
   const displayList = query.trim() ? results : []
@@ -97,11 +98,13 @@ export default function SearchPage() {
 
       <div className="flex-1 overflow-y-auto space-y-2 pr-0.5">
         {!query.trim() && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <span className="text-5xl mb-3">🔍</span>
-            <p className="text-slate-300 font-semibold text-sm mb-1">AI-powered search</p>
-            <p className="text-slate-500 text-xs leading-relaxed">
-              Type anything: topics, reasons, keywords. Gemini finds the most relevant bookmarks semantically.
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <div className="w-10 h-10 rounded-full bg-surface-raised border border-border flex items-center justify-center text-text-muted mb-3">
+              <IconSearch size={18} strokeWidth={1.5} />
+            </div>
+            <p className="text-text font-medium text-sm mb-1">Semantic search</p>
+            <p className="text-text-muted text-xs leading-relaxed max-w-xs">
+              Search by intent, reason, or topic across notes and saved bookmarks.
             </p>
           </div>
         )}
@@ -109,23 +112,22 @@ export default function SearchPage() {
         {query.trim() && loading && (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="glass-card p-3 animate-pulse">
-                <div className="flex gap-2 items-center mb-2">
-                  <div className="w-5 h-5 rounded bg-surface-border" />
-                  <div className="h-3 bg-surface-border rounded flex-1" />
+              <div key={i} className="surface-card p-3 space-y-2">
+                <div className="flex gap-2 items-center">
+                  <div className="w-4 h-4 rounded bg-surface-raised" />
+                  <div className="h-3 bg-surface-raised rounded flex-1" />
                 </div>
-                <div className="h-2.5 bg-surface-border rounded w-3/4 mb-1" />
-                <div className="h-2.5 bg-surface-border rounded w-1/2" />
+                <div className="h-2.5 bg-surface-raised rounded w-3/4" />
+                <div className="h-2 bg-surface-raised rounded w-1/2" />
               </div>
             ))}
           </div>
         )}
 
         {query.trim() && !loading && displayList.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <span className="text-4xl mb-3">🤔</span>
-            <p className="text-slate-400 text-sm font-medium">No matches found</p>
-            <p className="text-slate-600 text-xs mt-1">Try different keywords</p>
+          <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+            <p className="text-text font-medium text-sm">No matches found</p>
+            <p className="text-text-muted text-xs mt-1">Try searching with different terms</p>
           </div>
         )}
 

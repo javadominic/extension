@@ -19,64 +19,74 @@ const SHARED_STYLE = `
   .badge-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #161616;
-    border: 1px solid rgba(232,160,52,0.35);
-    border-radius: 99px;
-    padding: 7px 12px 7px 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(232,160,52,0.08);
-    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
-    color: #e2e8f0;
-    font-size: 13px;
-    font-weight: 600;
+    gap: 8px;
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 8px;
+    padding: 6px 12px 6px 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    animation: popIn 0.25s ease-out forwards;
+    color: #F3EEE4;
+    font-size: 12px;
+    font-weight: 500;
   }
-  .badge-pill:hover { border-color: rgba(232,160,52,0.6); }
+  .badge-pill:hover { border-color: #3D372E; background: #211E18; }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #E5A53A;
+    flex-shrink: 0;
+  }
 
   .badge-count {
-    background: rgba(232,160,52,0.2);
-    color: #e8a034;
-    border-radius: 99px;
-    font-size: 10px;
-    font-weight: 700;
+    background: rgba(229,165,58,0.15);
+    color: #E5A53A;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
     padding: 1px 5px;
-    min-width: 18px;
+    min-width: 16px;
     text-align: center;
   }
 
   @keyframes popIn {
-    from { opacity: 0; transform: scale(0.7); }
+    from { opacity: 0; transform: scale(0.92); }
     to   { opacity: 1; transform: scale(1); }
   }
   @keyframes slideIn {
-    from { opacity: 0; transform: translateY(16px) scale(0.95); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes slideOut {
     from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 0; transform: translateY(8px); }
   }
 
   .panel {
     position: fixed;
     z-index: 2147483647;
-    background: #161616;
-    border: 1px solid #262626;
-    border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(232,160,52,0.08);
-    animation: slideIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards;
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    animation: slideIn 0.25s ease-out forwards;
     max-width: 320px;
     min-width: 260px;
-    color: #e2e8f0;
+    color: #F3EEE4;
     user-select: none;
   }
-  .panel.dismiss { animation: slideOut 0.3s ease-in forwards; }
+  .panel.dismiss { animation: slideOut 0.2s ease-in forwards; }
 
   .panel-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 14px 10px;
-    border-bottom: 1px solid #232323;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2C2820;
+    background: #14120E;
     cursor: grab;
   }
   .panel-header:active { cursor: grabbing; }
@@ -86,129 +96,136 @@ const SHARED_STYLE = `
     font-style: italic;
     font-size: 15px;
     font-weight: 400;
-    color: #e8a034;
+    color: #E5A53A;
     flex: 1;
   }
-  .favicon { width: 16px; height: 16px; border-radius: 3px; }
+  .favicon { width: 15px; height: 15px; border-radius: 3px; }
 
   .close-btn {
     background: none;
     border: none;
-    color: #64748b;
+    color: #958D7D;
     cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    padding: 0 2px;
-    transition: color 0.15s;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
     flex-shrink: 0;
   }
-  .close-btn:hover { color: #e2e8f0; }
+  .close-btn:hover { color: #F3EEE4; background: rgba(243,238,228,0.06); }
 
-  .panel-body { padding: 10px 14px; }
+  .panel-body { padding: 10px 12px; }
 
   .note-card {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid #2a2a2a;
-    border-radius: 10px;
+    background: #211E18;
+    border: 1px solid #2C2820;
+    border-radius: 6px;
     padding: 8px 10px;
     margin-bottom: 6px;
     display: flex;
     gap: 8px;
     align-items: flex-start;
   }
-  .note-card-num { color: #e8a034; font-size: 10px; font-weight: 700; margin-top: 2px; flex-shrink: 0; }
-  .note-card-text { font-size: 12px; line-height: 1.5; color: #cbd5e1; white-space: pre-wrap; word-break: break-word; }
+  .note-card-num { color: #E5A53A; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; flex-shrink: 0; }
+  .note-card-text { font-size: 11px; line-height: 1.5; color: #B3AB9B; white-space: pre-wrap; word-break: break-word; }
 
   .panel-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px 12px;
-    border-top: 1px solid #1e1e1e;
-    gap: 10px;
+    padding: 8px 12px;
+    border-top: 1px solid #2C2820;
+    background: #14120E;
+    gap: 8px;
   }
   .btn-edit {
     flex: 1;
-    padding: 7px 12px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
     cursor: pointer;
     border: none;
-    background: #e8a034;
-    color: #0c0c0c;
+    background: #E5A53A;
+    color: #0F0E0C;
     transition: background 0.15s;
   }
-  .btn-edit:hover { background: #d08c2a; }
+  .btn-edit:hover { background: #D49429; }
   .btn-dismiss {
     background: none;
     border: none;
-    color: #64748b;
-    font-size: 12px;
+    color: #958D7D;
+    font-size: 11px;
     cursor: pointer;
-    padding: 4px 0;
-    transition: color 0.15s;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
     font-family: 'DM Mono', system-ui, sans-serif;
   }
-  .btn-dismiss:hover { color: #94a3b8; }
+  .btn-dismiss:hover { color: #F3EEE4; background: rgba(243,238,228,0.06); }
 
   .note-input {
     width: 100%;
     height: 64px;
-    background: rgba(0,0,0,0.2);
-    border: 1px solid #333;
-    color: #e2e8f0;
-    border-radius: 8px;
+    background: #211E18;
+    border: 1px solid #2C2820;
+    color: #F3EEE4;
+    border-radius: 6px;
     padding: 8px;
-    font-size: 12px;
+    font-size: 11px;
     resize: none;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s;
     font-family: 'DM Mono', system-ui, sans-serif;
   }
-  .note-input:focus { border-color: #e8a034; }
+  .note-input:focus { border-color: #E5A53A; }
 
   .unsaved-pill {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: #161616;
-    border: 1px solid #262626;
-    border-radius: 99px;
-    padding: 6px 12px 6px 10px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    gap: 8px;
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 8px;
+    padding: 6px 10px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    animation: popIn 0.25s ease-out forwards;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, background-color 0.15s;
   }
-  .unsaved-pill:hover { border-color: rgba(232,160,52,0.4); background: #1a1a1a; }
+  .unsaved-pill:hover { border-color: #3D372E; background: #211E18; }
   .unsaved-pill-close {
     background: none;
     border: none;
-    color: #64748b;
+    color: #958D7D;
     cursor: pointer;
-    font-size: 15px;
-    line-height: 1;
-    padding: 0 0 0 4px;
-    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
   }
-  .unsaved-pill-close:hover { color: #e2e8f0; }
+  .unsaved-pill-close:hover { color: #F3EEE4; background: rgba(243,238,228,0.06); }
 
   .unsaved-panel {
     position: fixed;
     z-index: 2147483647;
-    background: #161616;
-    border: 1px solid #262626;
-    border-radius: 14px;
-    padding: 14px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) forwards;
+    background: #181612;
+    border: 1px solid #2C2820;
+    border-radius: 10px;
+    padding: 12px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    animation: slideIn 0.25s ease-out forwards;
     max-width: 300px;
     min-width: 240px;
-    color: #e2e8f0;
+    color: #F3EEE4;
   }
-  .unsaved-panel-label { font-size: 11px; color: #94a3b8; display: block; margin-bottom: 6px; }
+  .unsaved-panel-label { font-size: 11px; color: #958D7D; display: block; margin-bottom: 6px; }
+
 `
 
 const CORNER_POSITIONS = ['bottom-right', 'bottom-left', 'top-right', 'top-left'] as const
@@ -321,16 +338,18 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
     !existingBookmark.note.startsWith('Interesting') &&
     !existingBookmark.note.startsWith('Saved')
   const labelText = hasNote
-    ? '＋ Add another remark'
-    : existingBookmark ? '＋ Add remark' : '＋ Save page'
+    ? 'Add another remark'
+    : existingBookmark ? 'Add remark' : 'Save page'
 
   const pill = document.createElement('div')
   pill.className = 'badge'
   pill.innerHTML = `
     <div class="unsaved-pill" id="unsaved-pill-inner">
-      <span style="font-size:15px;">🧠</span>
-      <span style="font-size:12px; font-weight:500; color:#cbd5e1;">${labelText}</span>
-      <button class="unsaved-pill-close" id="unsaved-pill-close">×</button>
+      <span class="badge-dot"></span>
+      <span style="font-size:11px; font-weight:500; color:#F3EEE4;">${labelText}</span>
+      <button class="unsaved-pill-close" id="unsaved-pill-close" aria-label="Dismiss">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
     </div>
   `
   shadow.appendChild(pill)
@@ -370,14 +389,16 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
     panel.className = 'unsaved-panel badge'
     panel.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:grab;">
-        <span style="font-size:15px;">🧠</span>
+        <span class="badge-dot"></span>
         <span class="brand" style="font-size:14px;">Contextos</span>
-        <button class="close-btn" id="ep-close">×</button>
+        <button class="close-btn" id="ep-close" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
       <label class="unsaved-panel-label">Why are you saving this?</label>
       <textarea id="ep-note" class="note-input" placeholder="Add a personal note…"></textarea>
       <div style="display:flex;gap:8px;">
-        <button class="btn-edit" id="ep-save" style="flex:1;">Save Note</button>
+        <button class="btn-edit" id="ep-save" style="flex:1;">Save note</button>
       </div>
     `
     eShadow.appendChild(panel)
@@ -400,12 +421,12 @@ function injectUnsavedWidget(existingBookmark?: BrainBookmark) {
 
       if (existingBookmark) {
         chrome.runtime.sendMessage({ type: 'APPEND_NOTE', payload: { id: existingBookmark.id, newNote: note, uid: existingBookmark.uid } }, () => {
-          panel.innerHTML = `<div style="text-align:center;color:#e8a034;font-size:13px;font-weight:500;padding:12px;">✓ Note added!</div>`
+          panel.innerHTML = `<div style="text-align:center;color:#E5A53A;font-size:12px;font-weight:500;padding:12px;">Note saved</div>`
           setTimeout(() => eHost.remove(), 1500)
         })
       } else {
         chrome.runtime.sendMessage({ type: 'SAVE_NEW_PAGE_WITH_NOTE', payload: { title, url, note } }, () => {
-          panel.innerHTML = `<div style="text-align:center;color:#e8a034;font-size:13px;font-weight:500;padding:12px;">✓ Saved!</div>`
+          panel.innerHTML = `<div style="text-align:center;color:#E5A53A;font-size:12px;font-weight:500;padding:12px;">Page saved</div>`
           setTimeout(() => eHost.remove(), 1500)
         })
       }
@@ -435,15 +456,17 @@ function injectToast(bookmark: BrainBookmark, onDismissed?: () => void) {
           <span class="note-card-text">${n.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
         </div>
       `).join('')
-    : `<p style="font-size:12px;color:#64748b;font-style:italic;padding:2px 0;">No personal note: click Edit to add one.</p>`
+    : `<p style="font-size:11px;color:#958D7D;padding:2px 0;">No note recorded.</p>`
 
   const panel = document.createElement('div')
   panel.className = 'panel badge'
   panel.innerHTML = `
     <div class="panel-header" id="panel-drag-handle">
       <img class="favicon" src="https://www.google.com/s2/favicons?domain=${domain}&sz=32" alt="" onerror="this.style.display='none'"/>
-      <span class="brand">🧠 Contextos</span>
-      <button class="close-btn" id="panel-close">×</button>
+      <span class="brand">Contextos</span>
+      <button class="close-btn" id="panel-close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
     </div>
     <div class="panel-body">${notesHTML}</div>
     <div class="panel-footer">

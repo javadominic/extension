@@ -92,26 +92,17 @@ export default function GraphView({ data, onSelectNode }: Props) {
         style={{ background: 'transparent' }}
       >
         <defs>
-          {/* Glow filter for hovered / selected nodes */}
-          <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-
           {/* Cluster halo gradient per cluster */}
           {clusters.map((c: BookmarkCluster) => (
             <radialGradient key={c.id} id={`halo-${c.id}`} cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor={c.color} stopOpacity="0.18" />
+              <stop offset="0%" stopColor={c.color} stopOpacity="0.06" />
               <stop offset="100%" stopColor={c.color} stopOpacity="0" />
             </radialGradient>
           ))}
 
           {/* Directed chain arrow marker */}
           <marker id="chain-arrow" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#e8a034" />
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#E5A53A" />
           </marker>
         </defs>
 
@@ -146,9 +137,9 @@ export default function GraphView({ data, onSelectNode }: Props) {
                 key={i}
                 x1={src.x} y1={src.y}
                 x2={tgt.x} y2={tgt.y}
-                stroke={isChain ? '#e8a034' : (isHighlighted ? clusterColor[src.clusterId] ?? '#6366f1' : '#334155')}
-                strokeWidth={isChain ? (isHighlighted ? 2.5 : 2) : (isHighlighted ? 1.5 : 0.8)}
-                strokeOpacity={isChain ? 0.95 : (isHighlighted ? 0.8 : 0.35)}
+                stroke={isChain ? '#E5A53A' : (isHighlighted ? clusterColor[src.clusterId] ?? 'var(--text-secondary)' : 'var(--border)')}
+                strokeWidth={isChain ? (isHighlighted ? 2 : 1.5) : (isHighlighted ? 1.5 : 1)}
+                strokeOpacity={isChain ? 0.9 : (isHighlighted ? 0.7 : 0.4)}
                 markerEnd={isChain ? 'url(#chain-arrow)' : undefined}
               />
             )
@@ -156,7 +147,7 @@ export default function GraphView({ data, onSelectNode }: Props) {
 
           {/* ── Nodes ── */}
           {nodes.map((n: GraphNode) => {
-            const color = clusterColor[n.clusterId] ?? '#6366f1'
+            const color = clusterColor[n.clusterId] ?? '#E5A53A'
             const isHovered = hoveredId === n.id
             const isSelected = selectedId === n.id
             const active = isHovered || isSelected
@@ -172,16 +163,15 @@ export default function GraphView({ data, onSelectNode }: Props) {
                   onSelectNode?.(n)
                 }}
               >
-                {/* Outer glow ring when active */}
+                {/* Active selection ring */}
                 {active && (
                   <circle
                     cx={n.x} cy={n.y}
-                    r={n.radius + 5}
+                    r={n.radius + 3.5}
                     fill="none"
                     stroke={color}
                     strokeWidth={1.5}
-                    strokeOpacity={0.5}
-                    filter="url(#glow)"
+                    strokeOpacity={0.8}
                   />
                 )}
 
@@ -190,19 +180,19 @@ export default function GraphView({ data, onSelectNode }: Props) {
                   cx={n.x} cy={n.y}
                   r={n.radius}
                   fill={color}
-                  fillOpacity={active ? 1 : 0.75}
-                  stroke={active ? '#fff' : color}
-                  strokeWidth={active ? 1.5 : 0}
+                  fillOpacity={active ? 1 : 0.8}
+                  stroke={active ? 'var(--text)' : 'var(--bg)'}
+                  strokeWidth={active ? 1.5 : 1}
                 />
 
-                {/* Label - always show for large nodes, on hover for others */}
+                {/* Label */}
                 {(active || n.radius >= 11) && (
                   <text
                     x={n.x}
-                    y={n.y + n.radius + 9}
+                    y={n.y + n.radius + 10}
                     textAnchor="middle"
-                    fontSize="7.5"
-                    fill="#cbd5e1"
+                    fontSize="8"
+                    fill="var(--text-secondary)"
                     fontFamily="inherit"
                     style={{ pointerEvents: 'none' }}
                   >
@@ -220,27 +210,28 @@ export default function GraphView({ data, onSelectNode }: Props) {
       {/* ── Node detail popover ── */}
       {selectedNode && (
         <div
-          className="absolute bottom-3 left-3 right-3 glass-card p-3 space-y-1.5 z-20 animate-fade-in"
+          className="absolute bottom-3 left-3 right-3 surface-card p-3 space-y-1.5 z-20 shadow-lg border border-border rounded-btn"
           style={{ maxHeight: '140px' }}
         >
           <div className="flex items-start gap-2">
             <div
               className="w-2.5 h-2.5 rounded-full mt-0.5 flex-shrink-0"
-              style={{ background: clusterColor[selectedNode.clusterId] ?? '#6366f1' }}
+              style={{ background: clusterColor[selectedNode.clusterId] ?? 'var(--amber)' }}
             />
-            <p className="text-xs font-semibold text-slate-100 leading-tight line-clamp-2 flex-1">
+            <p className="text-xs font-medium text-text leading-tight line-clamp-2 flex-1">
               {selectedNode.bookmark.title}
             </p>
             <button
               onClick={() => setSelectedId(null)}
-              className="text-slate-500 hover:text-slate-300 text-xs flex-shrink-0"
+              className="text-text-muted hover:text-text text-xs flex-shrink-0 p-0.5 cursor-pointer"
+              aria-label="Close"
             >
               ✕
             </button>
           </div>
 
           {selectedNode.bookmark.note && (
-            <p className="text-[10px] text-slate-400 line-clamp-2 pl-4">
+            <p className="text-[11px] text-text-secondary line-clamp-2 pl-4">
               {selectedNode.bookmark.note}
             </p>
           )}
@@ -248,23 +239,23 @@ export default function GraphView({ data, onSelectNode }: Props) {
           {selectedNode.bookmark.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 pl-4">
               {selectedNode.bookmark.tags.slice(0, 4).map(t => (
-                <span key={t} className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300">
-                  {t}
+                <span key={t} className="chip-neutral text-[10px] py-0.5 px-1.5">
+                  #{t}
                 </span>
               ))}
             </div>
           )}
 
-          <div className="flex gap-2 pl-4 pt-0.5">
+          <div className="flex items-center gap-3 pl-4 pt-0.5">
             <a
               href={selectedNode.bookmark.url}
               target="_blank"
               rel="noreferrer"
-              className="text-[10px] text-primary-400 hover:text-primary-300 font-medium transition-colors"
+              className="text-xs text-amber-text hover:underline font-medium"
             >
-              Open ↗
+              Open link
             </a>
-            <span className="text-slate-600 text-[10px]">
+            <span className="text-text-muted text-[10px] tabular-nums">
               {new Date(selectedNode.bookmark.addedAt).toLocaleDateString()}
             </span>
           </div>

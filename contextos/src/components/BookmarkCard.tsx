@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
 import TagBadge from './TagBadge'
+import {
+  IconLink2,
+  IconExternalLink,
+  IconCopy,
+  IconCheck,
+  IconEdit,
+  IconTrash2,
+  IconShare2,
+} from './LucideIcons'
 
 interface Props {
   bookmark: BrainBookmark
@@ -40,23 +49,23 @@ function parseGitHubParts(url: string): { owner: string; repo: string } | null {
 }
 
 const HEALTH_DOT: Record<string, string> = {
-  alive:     'bg-emerald-400',
-  dead:      'bg-red-400 animate-pulse',
-  unchecked: 'bg-slate-500',
+  alive:     'bg-live',
+  dead:      'bg-dead',
+  unchecked: 'bg-text-muted',
 }
 
 const HEALTH_LABEL: Record<string, string> = {
-  alive: 'text-emerald-400',
-  dead:  'text-red-400',
-  unchecked: 'text-slate-500',
+  alive: 'text-live',
+  dead:  'text-dead',
+  unchecked: 'text-text-muted',
 }
 
 export default function BookmarkCard({
   bookmark, onEdit, onDelete, onShare, showTeamShare,
   selected, onSelect, bulkMode, chainLength,
 }: Props) {
-  const [hovered, setHovered]   = useState(false)
-  const [copied, setCopied]     = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [copied, setCopied]   = useState(false)
 
   const domain = (() => {
     try { return new URL(bookmark.url).hostname } catch { return '' }
@@ -83,8 +92,8 @@ export default function BookmarkCard({
 
   return (
     <div
-      className={`glass-card p-3.5 cursor-pointer group animate-fade-in relative ${
-        selected ? 'border-primary-500/60 bg-primary-500/5' : ''
+      className={`surface-card p-3.5 cursor-pointer group transition-colors duration-fast relative ${
+        selected ? 'border-amber bg-amber-soft' : 'hover:border-border-control'
       }`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -95,7 +104,7 @@ export default function BookmarkCard({
             type="checkbox"
             checked={!!selected}
             onChange={e => onSelect?.(bookmark.id, e.target.checked)}
-            className="mt-1 flex-shrink-0 accent-amber-400 w-3.5 h-3.5"
+            className="mt-1 flex-shrink-0 accent-amber w-3.5 h-3.5 cursor-pointer"
             onClick={e => e.stopPropagation()}
           />
         )}
@@ -103,135 +112,120 @@ export default function BookmarkCard({
         <img
           src={faviconUrl}
           alt=""
-          className="w-5 h-5 rounded mt-0.5 flex-shrink-0"
+          className="w-4 h-4 rounded mt-0.5 flex-shrink-0"
           onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
         />
 
         <div className="flex-1 min-w-0">
           <button
-            className="text-slate-100 font-semibold text-[13px] leading-snug line-clamp-2 hover:text-primary-300 transition-colors text-left w-full"
+            className="text-text font-medium text-[13px] leading-snug line-clamp-2 hover:text-amber-text transition-colors text-left w-full cursor-pointer"
             onClick={handleOpen}
             title={bookmark.title}
           >
             {ghParts ? (
               <>
-                <span className="text-slate-500 font-normal">{ghParts.owner}/</span>
-                <span className="font-bold">{ghParts.repo}</span>
+                <span className="text-text-muted font-normal">{ghParts.owner}/</span>
+                <span className="font-medium text-text">{ghParts.repo}</span>
               </>
             ) : bookmark.title}
           </button>
           <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-[10px] text-slate-600 truncate">{domain}</span>
+            <span className="text-[11px] text-text-muted truncate">{domain}</span>
             {chainLength && chainLength > 1 && (
               <span
-                className="inline-flex items-center gap-1 text-[9px] text-primary-400 font-semibold bg-primary-500/15 px-1.5 py-0.2 rounded border border-primary-500/30 flex-shrink-0"
+                className="inline-flex items-center gap-1 text-[10px] text-amber-text font-medium bg-amber-soft px-1.5 py-0.5 rounded border border-amber/30 flex-shrink-0"
                 title={`Part of a ${chainLength}-page chain`}
               >
-                <span>🔗</span>
-                <span>part of a {chainLength}-page chain</span>
+                <IconLink2 size={11} strokeWidth={1.5} />
+                <span>Chain of {chainLength}</span>
               </span>
             )}
           </div>
         </div>
 
-        <div className={`flex items-center gap-0.5 transition-opacity duration-150 flex-shrink-0 ${
+        <div className={`flex items-center gap-0.5 transition-opacity duration-fast flex-shrink-0 ${
           hovered && !bulkMode ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}>
           {onShare && showTeamShare && (
             <button
               onClick={() => onShare(bookmark)}
-              className="text-slate-500 hover:text-primary-400 transition-colors p-1.5 rounded hover:bg-white/5"
+              className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
               title="Share with team"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
-              </svg>
+              <IconShare2 size={14} strokeWidth={1.5} />
             </button>
           )}
           <button
             onClick={handleOpen}
-            className="text-slate-500 hover:text-primary-400 transition-colors p-1.5 rounded hover:bg-white/5"
+            className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
             title="Open"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
+            <IconExternalLink size={14} strokeWidth={1.5} />
           </button>
           <button
             onClick={handleCopyLink}
-            className="text-slate-500 hover:text-primary-400 transition-colors p-1.5 rounded hover:bg-white/5"
-            title={copied ? 'Copied!' : 'Copy link'}
+            className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
+            title={copied ? 'Copied' : 'Copy link'}
           >
             {copied ? (
-              <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
+              <IconCheck size={14} className="text-live" strokeWidth={2} />
             ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
+              <IconCopy size={14} strokeWidth={1.5} />
             )}
           </button>
           <button
             onClick={() => onEdit(bookmark)}
-            className="text-slate-500 hover:text-primary-400 transition-colors p-1.5 rounded hover:bg-white/5"
+            className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
             title="Edit note & tags"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
+            <IconEdit size={14} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => onDelete(bookmark.id)}
-            className="text-slate-500 hover:text-red-400 transition-colors p-1.5 rounded hover:bg-white/5"
+            className="text-text-muted hover:text-danger transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
             title="Delete"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
+            <IconTrash2 size={14} strokeWidth={1.5} />
           </button>
         </div>
       </div>
 
       {bookmark.note && (
-        <p className="text-[12px] text-slate-400 line-clamp-2 leading-snug mb-2.5 pl-7">
+        <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed mb-2 pl-6">
           {bookmark.note}
         </p>
       )}
 
-      <div className="flex items-center gap-1.5 flex-wrap pl-7">
+      <div className="flex items-center gap-1.5 flex-wrap pl-6">
         {visibleTags.map(tag => (
           <TagBadge key={tag} tag={tag} />
         ))}
         {extraTags > 0 && (
-          <span className="inline-flex items-center text-[10px] font-semibold rounded-full px-2 py-0.5 bg-white/5 text-slate-500 border border-white/10">
+          <span className="inline-flex items-center text-[10px] text-text-muted rounded px-1.5 py-0.5 bg-surface-raised border border-border">
             +{extraTags}
           </span>
         )}
 
-        <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+        <div className="ml-auto flex items-center gap-2.5 flex-shrink-0">
           {bookmark.health === 'dead' && (
             <button
               onClick={handleWayback}
-              className="text-[10px] text-slate-500 hover:text-primary-400 transition-colors font-medium flex items-center gap-0.5"
-              title="Try Wayback Machine archive"
+              className="text-[10px] text-text-muted hover:text-amber transition-colors font-medium cursor-pointer"
+              title="Open in Wayback Machine archive"
             >
-              <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
               Wayback
             </button>
           )}
 
           <span
-            className={`inline-flex items-center gap-1 text-[10px] font-semibold ${HEALTH_LABEL[bookmark.health]}`}
-            title={bookmark.lastChecked ? `Last checked: ${new Date(bookmark.lastChecked).toLocaleDateString()}` : undefined}
+            className={`inline-flex items-center gap-1.5 text-[11px] font-medium ${HEALTH_LABEL[bookmark.health]}`}
+            title={bookmark.lastChecked ? `Last checked ${new Date(bookmark.lastChecked).toLocaleDateString()}` : undefined}
           >
             <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${HEALTH_DOT[bookmark.health]}`} />
-            {bookmark.health === 'alive' ? 'Live' : bookmark.health === 'dead' ? 'Dead' : 'Unchecked'}
+            <span>{bookmark.health === 'alive' ? 'Live' : bookmark.health === 'dead' ? 'Dead' : 'Unchecked'}</span>
           </span>
 
-          <span className="text-[10px] text-slate-600">
+          <span className="text-[10px] text-text-muted tabular-nums">
             {timeAgo(bookmark.addedAt)}
           </span>
         </div>

@@ -7,17 +7,12 @@ import SettingsPage  from './pages/SettingsPage'
 import { getSettings } from '../lib/storage'
 import type { TeamData } from '../types'
 import {
-  IconBrain,
   IconSearch,
   IconBookmark,
   IconNetwork,
   IconUsers,
   IconSettings,
 } from '../components/LucideIcons'
-
-import graphIcon    from '../assets/icons/tab-graph.png'
-import teamsIcon    from '../assets/icons/tab-teams.png'
-import settingsIcon from '../assets/icons/tab-settings.png'
 import contextosLogo from '/icons/icon128.png'
 
 type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
@@ -25,16 +20,15 @@ type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 interface TabItem {
   id: Tab
   label: string
-  Icon?: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
-  image?: string
+  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
 }
 
 const TABS: TabItem[] = [
   { id: 'search',    label: 'Search',   Icon: IconSearch },
   { id: 'bookmarks', label: 'Saves',    Icon: IconBookmark },
-  { id: 'graph',     label: 'Graph',    image: graphIcon },
-  { id: 'teams',     label: 'Teams',    image: teamsIcon },
-  { id: 'settings',  label: 'Settings', image: settingsIcon },
+  { id: 'graph',     label: 'Graph',    Icon: IconNetwork },
+  { id: 'teams',     label: 'Teams',    Icon: IconUsers },
+  { id: 'settings',  label: 'Settings', Icon: IconSettings },
 ]
 
 export default function App() {
@@ -149,7 +143,6 @@ export default function App() {
               }`}
               onClick={() => setActiveTab(tab.id)}
             >
-              {/* Active 2px amber top bar */}
               {isActive && (
                 <div
                   className="absolute top-0 left-0 right-0 h-[2px] bg-amber"
@@ -158,21 +151,11 @@ export default function App() {
               )}
 
               <div className="relative flex items-center justify-center w-5 h-5">
-                {tab.image ? (
-                  <img
-                    src={tab.image}
-                    alt={tab.label}
-                    className={`w-5 h-5 object-contain transition-all duration-150 ${
-                      isActive ? 'scale-110' : 'opacity-70 hover:opacity-100'
-                    }`}
-                  />
-                ) : TabIcon ? (
-                  <TabIcon
-                    size={20}
-                    strokeWidth={1.5}
-                    className={isActive ? 'text-amber' : 'currentColor'}
-                  />
-                ) : null}
+                <TabIcon
+                  size={18}
+                  strokeWidth={1.5}
+                  className={isActive ? 'text-amber' : 'text-text-secondary'}
+                />
                 {tab.id === 'teams' && totalNewShared > 0 && (
                   <span className="absolute -top-1 -right-2 bg-dead text-white text-[10px] font-medium px-1 rounded-full min-w-[15px] text-center leading-tight">
                     {totalNewShared > 9 ? '9+' : totalNewShared}

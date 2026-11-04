@@ -27,7 +27,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-CWqh29uU.js"
+        "assets/index.ts-D3VB5MNd.js"
       ],
       "matches": [
         "<all_urls>"
@@ -36,7 +36,7 @@
     },
     {
       "js": [
-        "assets/searchSuggest.ts-DH_xQ0eO.js"
+        "assets/searchSuggest.ts-D1EnjFI7.js"
       ],
       "matches": [
         "https://www.google.com/search*",
@@ -57,7 +57,7 @@
     },
     {
       "js": [
-        "assets/meetOverlay.ts-CpyY1xBr.js"
+        "assets/meetOverlay.ts-D9tnPalP.js"
       ],
       "matches": [
         "https://meet.google.com/*",
@@ -90,7 +90,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-CWqh29uU.js"
+        "assets/index.ts-D3VB5MNd.js"
       ],
       "use_dynamic_url": false
     },
@@ -111,7 +111,7 @@
         "https://www.google.fr/*"
       ],
       "resources": [
-        "assets/searchSuggest.ts-DH_xQ0eO.js"
+        "assets/searchSuggest.ts-D1EnjFI7.js"
       ],
       "use_dynamic_url": false
     },
@@ -121,7 +121,7 @@
         "https://zoom.us/*"
       ],
       "resources": [
-        "assets/meetOverlay.ts-CpyY1xBr.js"
+        "assets/meetOverlay.ts-D9tnPalP.js"
       ],
       "use_dynamic_url": false
     }
