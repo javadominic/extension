@@ -4,7 +4,8 @@ import BookmarksPage from './pages/BookmarksPage'
 import GraphPage     from './pages/GraphPage'
 import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
-import { getSettings } from '../lib/storage'
+import OnboardingApp from '../onboarding/OnboardingApp'
+import { getSettings, hasCompletedTour } from '../lib/storage'
 import type { TeamData } from '../types'
 import {
   IconSearch,
@@ -33,6 +34,14 @@ const TABS: TabItem[] = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>('bookmarks')
+  const [showTour, setShowTour]   = useState(false)
+
+  // Check on mount whether the user has completed the tour
+  useEffect(() => {
+    hasCompletedTour().then((done) => {
+      if (!done) setShowTour(true)
+    })
+  }, [])
 
   // Apply theme on mount and whenever settings change
   useEffect(() => {
@@ -54,6 +63,9 @@ export default function App() {
     }
     window.addEventListener('SWITCH_TAB', tabHandler)
 
+    const tourHandler = () => setShowTour(true)
+    window.addEventListener('SHOW_TOUR', tourHandler)
+
     // Listen for storage theme changes in real time
     function onStorageChange(changes: Record<string, chrome.storage.StorageChange>, area: string) {
       if (area === 'local' && changes.settings?.newValue?.theme) {
@@ -63,6 +75,7 @@ export default function App() {
     chrome.storage.onChanged.addListener(onStorageChange)
     return () => {
       window.removeEventListener('SWITCH_TAB', tabHandler)
+      window.removeEventListener('SHOW_TOUR', tourHandler)
       chrome.storage.onChanged.removeListener(onStorageChange)
     }
   }, [])
@@ -97,6 +110,10 @@ export default function App() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-bg text-text">
+      {/* ── Tour Guide Overlay (shown on first install, full-bleed inside popup) */}
+      {showTour && (
+        <OnboardingApp onComplete={() => setShowTour(false)} />
+      )}
       {/* ── Header (Custom Contextos Logo Tile, Wordmark, AI Ready) ── */}
       <header className="sticky top-0 z-40 flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-surface select-none">
         <img

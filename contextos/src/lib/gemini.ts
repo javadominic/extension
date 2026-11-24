@@ -194,3 +194,31 @@ export async function semanticSearch(
     return []
   }
 }
+
+/**
+ * Generate a single embedding vector for a search query.
+ * Uses text-embedding-004 — 1 API call per search, not per bookmark.
+ * Returns null silently on any error so caller can fall back to BM25-only.
+ */
+export async function getQueryEmbedding(
+  query: string,
+  apiKey: string,
+): Promise<number[] | null> {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'models/text-embedding-004',
+        content: { parts: [{ text: query }] },
+        taskType: 'RETRIEVAL_QUERY',
+      }),
+    })
+    if (!response.ok) return null
+    const data = await response.json()
+    return data?.embedding?.values ?? null
+  } catch {
+    return null
+  }
+}

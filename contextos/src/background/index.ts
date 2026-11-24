@@ -178,10 +178,9 @@ chrome.bookmarks.onRemoved.addListener(async (id) => {
 chrome.runtime.onInstalled.addListener(async (details) => {
   chrome.alarms.create('healthCheck', { periodInMinutes: 10080 }) // 1 week
   if (details.reason === 'install') {
-    const res = await chrome.storage.local.get('hasCompletedTour')
-    if (!res.hasCompletedTour) {
-      chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/index.html') })
-    }
+    // Tour now runs inside the popup itself — no separate tab needed.
+    // Just open the popup; App.tsx will render the tour when hasCompletedTour is false.
+    chrome.action.openPopup().catch(() => {})
   }
 })
 

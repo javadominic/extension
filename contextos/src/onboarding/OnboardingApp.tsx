@@ -21,7 +21,7 @@ import contextosLogo from '/icons/icon128.png'
 
 const TOTAL_STEPS = 7
 
-export default function OnboardingApp() {
+export default function OnboardingApp({ onComplete }: { onComplete?: () => void }) {
   const [step, setStep] = useState<number>(1)
   const [settings, setSettings] = useState<AppSettings>({
     geminiApiKey: '',
@@ -64,14 +64,16 @@ export default function OnboardingApp() {
 
   async function handleExit() {
     await setCompletedTour(true)
-    // Close tab if possible, otherwise navigate to a clean state
-    window.close()
+    if (onComplete) {
+      onComplete()
+    } else {
+      window.close()
+    }
   }
 
   function handleNext() {
     if (step < TOTAL_STEPS) {
       setStep((s) => s + 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     } else {
       handleExit()
     }
@@ -80,7 +82,6 @@ export default function OnboardingApp() {
   function handleBack() {
     if (step > 1) {
       setStep((s) => s - 1)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
@@ -137,62 +138,60 @@ export default function OnboardingApp() {
   }
 
   return (
-    <div className="min-h-screen bg-bg text-text flex flex-col font-sans selection:bg-amber/20 selection:text-amber">
+    <div className="absolute inset-0 z-50 flex flex-col bg-bg text-text overflow-hidden">
       {/* ── Top Header Navigation Bar ──────────────────────────────── */}
-      <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md border-b border-border px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-surface-raised border border-border flex items-center justify-center p-1.5 shadow-sm">
+      <header className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-border bg-surface">
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-md bg-surface-raised border border-border flex items-center justify-center p-1 shadow-sm">
             <img src={contextosLogo} alt="Contextos" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-serif italic text-base text-amber tracking-tight">Contextos</span>
-              <span className="text-border-control">/</span>
-              <span className="text-xs font-mono text-text-muted uppercase tracking-wider">Interactive Guide</span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-serif italic text-sm text-amber tracking-tight">Contextos</span>
+            <span className="text-border text-text-muted">/</span>
+            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">Guide</span>
           </div>
         </div>
 
         {/* Step Indicator & Exit */}
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-text-muted">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 text-[11px] font-mono text-text-muted">
             <span className="text-amber tabular-nums font-semibold">{step}</span>
             <span>of</span>
             <span className="tabular-nums">{TOTAL_STEPS}</span>
           </div>
 
-          <div className="h-4 w-px bg-border hidden sm:block" />
+          <div className="h-3 w-px bg-border" />
 
           <button
             onClick={handleExit}
-            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text px-2.5 py-1.5 rounded-md hover:bg-surface-raised transition-colors"
-            title="Exit guide anytime (Esc)"
+            className="flex items-center gap-1 text-[11px] text-text-muted hover:text-text px-2 py-1 rounded hover:bg-surface-raised transition-colors"
+            title="Exit guide (Esc)"
           >
-            <IconX size={14} />
+            <IconX size={12} />
             <span className="font-mono">Exit</span>
           </button>
         </div>
       </header>
 
       {/* Progress Track Line */}
-      <div className="w-full bg-surface-raised h-1">
+      <div className="flex-shrink-0 w-full bg-surface-raised h-0.5">
         <div
           className="bg-amber h-full transition-all duration-300 ease-out"
           style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
         />
       </div>
 
-      {/* ── Main Step Content Container ────────────────────────────── */}
-      <main className="flex-1 max-w-3xl w-full mx-auto px-6 py-10 flex flex-col justify-center">
+      {/* ── Scrollable Step Content ─────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* STEP 1: Welcome & Philosophy */}
         {step === 1 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 1 — Welcome</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Never forget <span className="italic text-amber">why</span> you saved a page.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Traditional bookmarks become digital graveyards of dead links and forgotten intentions.
                 Contextos is designed as an active thought archive: you record your reason, tags, and memory
                 right alongside the link.
@@ -200,9 +199,9 @@ export default function OnboardingApp() {
             </div>
 
             {/* Split Comparison Cards */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-3">
               {/* Bad: Traditional Bookmark */}
-              <div className="surface-card p-5 border border-border/80 opacity-60 rounded-xl space-y-3">
+              <div className="surface-card p-3.5 border border-border/80 opacity-60 rounded-xl space-y-3">
                 <div className="flex items-center justify-between text-xs text-text-muted font-mono">
                   <span>TRADITIONAL BOOKMARK</span>
                   <span className="text-dead">✕ Forgotten</span>
@@ -216,7 +215,7 @@ export default function OnboardingApp() {
               </div>
 
               {/* Good: Contextos Save */}
-              <div className="surface-card p-5 border-2 border-amber/40 bg-surface rounded-xl space-y-3 shadow-lg shadow-amber/5">
+              <div className="surface-card p-3.5 border-2 border-amber/40 bg-surface rounded-xl space-y-3 shadow-lg shadow-amber/5">
                 <div className="flex items-center justify-between text-xs font-mono">
                   <span className="text-amber font-semibold">CONTEXTOS SAVE</span>
                   <span className="text-live flex items-center gap-1">
@@ -243,19 +242,19 @@ export default function OnboardingApp() {
 
         {/* STEP 2: Google Sign-in */}
         {step === 2 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 2 — Account & Sync</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Connect your account for <span className="italic text-amber">cloud backup</span>.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Signing in enables seamless multi-device sync and lets you share collections with your team.
                 Prefer to stay off-grid? You can use Contextos entirely in local offline mode anytime.
               </p>
             </div>
 
-            <div className="surface-card p-6 rounded-xl border border-border space-y-5">
+            <div className="surface-card p-3.5 rounded-lg border border-border space-y-5">
               {settings.firebaseUid ? (
                 <div className="p-4 rounded-lg bg-live/10 border border-live/20 flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -320,19 +319,19 @@ export default function OnboardingApp() {
 
         {/* STEP 3: Gemini API Key & Connection Test */}
         {step === 3 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 3 — AI Engine</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Activate <span className="italic text-amber">semantic memory</span> with Gemini.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Contextos uses Google Gemini to generate smart notes, extract hashtags, and create vector embeddings.
                 Your key stays completely private in local Chrome storage.
               </p>
             </div>
 
-            <div className="surface-card p-6 rounded-xl border border-border space-y-4">
+            <div className="surface-card p-3.5 rounded-lg border border-border space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <label className="text-text-secondary font-medium">Gemini API Key</label>
@@ -413,18 +412,18 @@ export default function OnboardingApp() {
 
         {/* STEP 4: How to Save Pages & Site Chains */}
         {step === 4 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 4 — Capturing Context</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Capture pages with <span className="italic text-amber">intent</span>.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Saving is active, not passive. Whenever you bookmark something, add a quick remark explaining why it matters.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4">
+            <div className="grid gap-3">
               {/* Feature 1 */}
               <div className="surface-card p-4 rounded-xl border border-border space-y-2">
                 <div className="w-8 h-8 rounded-lg bg-surface-raised border border-border flex items-center justify-center text-amber">
@@ -463,18 +462,18 @@ export default function OnboardingApp() {
 
         {/* STEP 5: Hashtags & Quick Filtering */}
         {step === 5 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 5 — Organization</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Organize inline with <span className="italic text-amber">#hashtags</span>.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Forget rigid, nested folders. Simply include `#hashtags` inside your remarks to automatically categorize and filter your library.
               </p>
             </div>
 
-            <div className="surface-card p-6 rounded-xl border border-border space-y-5">
+            <div className="surface-card p-3.5 rounded-lg border border-border space-y-5">
               <div className="space-y-2">
                 <span className="text-xs text-text-muted font-mono">EXAMPLE REMARK</span>
                 <div className="p-4 bg-surface-raised rounded-lg border border-border font-sans text-xs leading-relaxed text-text">
@@ -519,20 +518,20 @@ export default function OnboardingApp() {
 
         {/* STEP 6: Search Matrices & Sensitivity */}
         {step === 6 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 6 — Retrieval Engine</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Search matrices & <span className="italic text-amber">sensitivity tuning</span>.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Contextos ranks matches using three combined signals: your personal remark words, keyword coverage gating, and semantic embedding vectors.
               </p>
             </div>
 
-            <div className="surface-card p-6 rounded-xl border border-border space-y-6">
+            <div className="surface-card p-3.5 rounded-lg border border-border space-y-6">
               {/* Three Pillars */}
-              <div className="grid sm:grid-cols-3 gap-3 text-xs">
+              <div className="grid gap-3 text-xs">
                 <div className="p-3 bg-surface-raised rounded-lg border border-border space-y-1">
                   <span className="text-amber font-mono font-semibold block text-[11px]">1. YOUR REMARK</span>
                   <p className="text-text-secondary text-[11px] leading-relaxed">
@@ -616,20 +615,20 @@ export default function OnboardingApp() {
 
         {/* STEP 7: In-Browser Helpers & Pinning */}
         {step === 7 && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
               <span className="text-xs font-mono text-amber uppercase tracking-wider">Step 7 — Daily Browsing</span>
-              <h1 className="text-3xl sm:text-4xl font-serif text-text tracking-tight">
+              <h1 className="text-xl font-serif text-text tracking-tight">
                 Context follows you <span className="italic text-amber">wherever you browse</span>.
               </h1>
-              <p className="text-sm text-text-secondary max-w-xl leading-relaxed">
+              <p className="text-sm text-text-secondary leading-relaxed">
                 Contextos works quietly inside your browser to surface your past saves at the exact moment you need them.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid gap-3">
               {/* Helper 1 */}
-              <div className="surface-card p-5 rounded-xl border border-border space-y-3">
+              <div className="surface-card p-3.5 rounded-lg border border-border space-y-3">
                 <span className="text-xs font-mono text-amber font-semibold">1. THE CORNER PILL</span>
                 <p className="text-xs text-text-secondary leading-relaxed">
                   When browsing any page, a subtle draggable pill appears in the corner. If you've saved the page before, it displays your previous notes so you never redo work.
@@ -644,7 +643,7 @@ export default function OnboardingApp() {
               </div>
 
               {/* Helper 2 */}
-              <div className="surface-card p-5 rounded-xl border border-border space-y-3">
+              <div className="surface-card p-3.5 rounded-lg border border-border space-y-3">
                 <span className="text-xs font-mono text-amber font-semibold">2. GOOGLE SEARCH ASSIST</span>
                 <p className="text-xs text-text-secondary leading-relaxed">
                   When you search on Google, Bing, Brave, or DuckDuckGo, Contextos checks your private archive and displays your past saves right next to web results.
@@ -674,36 +673,36 @@ export default function OnboardingApp() {
         )}
 
         {/* ── Footer Controls ────────────────────────────────────── */}
-        <div className="mt-10 pt-6 border-t border-border flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-border flex items-center justify-between flex-shrink-0">
           <button
             onClick={handleBack}
             disabled={step === 1}
-            className={`flex items-center gap-1.5 text-xs font-mono px-3 py-2 rounded-md transition-colors ${
+            className={`flex items-center gap-1 text-xs font-mono px-2.5 py-1.5 rounded transition-colors ${
               step === 1 ? 'opacity-30 cursor-not-allowed text-text-muted' : 'text-text hover:bg-surface-raised'
             }`}
           >
-            <IconChevronLeft size={14} />
+            <IconChevronLeft size={13} />
             <span>Back</span>
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleExit}
-              className="text-xs text-text-muted hover:text-text px-3 py-2 font-mono transition-colors"
+              className="text-xs text-text-muted hover:text-text px-2.5 py-1.5 font-mono transition-colors"
             >
               Skip guide
             </button>
 
             <button
               onClick={handleNext}
-              className="btn-primary text-xs flex items-center gap-1.5 px-4 py-2"
+              className="btn-primary text-xs flex items-center gap-1 px-3 py-1.5"
             >
               <span>{step === TOTAL_STEPS ? 'Start using Contextos' : 'Continue'}</span>
-              <IconChevronRight size={14} />
+              <IconChevronRight size={13} />
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

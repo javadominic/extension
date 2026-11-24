@@ -4,7 +4,8 @@ import BookmarkCard from '../../components/BookmarkCard'
 import AddNoteModal from '../../components/AddNoteModal'
 import Toast        from '../../components/Toast'
 import { getCachedBookmarks, getSettings } from '../../lib/storage'
-import { semanticSearch } from '../../lib/gemini'
+import { getQueryEmbedding } from '../../lib/gemini'
+import { findRelatedBookmarks } from '../../lib/search'
 import { updateNote, deleteBookmark } from '../../lib/bookmarks'
 import { getChainLength } from '../../lib/chains'
 import type { BrainBookmark } from '../../types'
@@ -29,29 +30,19 @@ export default function SearchPage() {
       setLoading(true)
       try {
         const settings = await getSettings()
-        let ids: string[]
+        const threshold = settings.searchSuggest?.threshold ?? 2.5
+
+        // Try to get a query embedding (1 API call) for semantic blending.
+        // Falls back to BM25-only if no key or if the call fails.
+        let queryEmbedding: number[] | undefined
         if (settings.geminiApiKey) {
-          ids = await semanticSearch(q, all, settings.geminiApiKey)
-        } else {
-          const lq = q.toLowerCase()
-          ids = all
-            .filter(
-              (b) =>
-                b.title.toLowerCase().includes(lq) ||
-                b.note.toLowerCase().includes(lq) ||
-                b.tags.some((t) => t.includes(lq))
-            )
-            .map((b) => b.id)
+          const emb = await getQueryEmbedding(q, settings.geminiApiKey)
+          if (emb) queryEmbedding = emb
         }
-        const idSet = new Set(ids)
-        const ordered = ids
-          .map((id) => all.find((b) => b.id === id))
-          .filter(Boolean) as BrainBookmark[]
-        const rest = all.filter((b) => !idSet.has(b.id) && (
-          b.title.toLowerCase().includes(q.toLowerCase()) ||
-          b.note.toLowerCase().includes(q.toLowerCase())
-        ))
-        setResults([...ordered, ...rest])
+
+        // Local BM25 + optional cosine similarity — no more sending all bookmarks to Gemini
+        const matchResults = findRelatedBookmarks(q, all, threshold, queryEmbedding)
+        setResults(matchResults.map(r => r.bookmark))
       } finally {
         setLoading(false)
       }

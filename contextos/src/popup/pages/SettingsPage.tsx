@@ -495,7 +495,7 @@ export default function SettingsPage() {
         <button
           type="button"
           onClick={() => {
-            chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/index.html') })
+            window.dispatchEvent(new CustomEvent('SHOW_TOUR'))
           }}
           className="btn-secondary text-xs py-1.5 px-3 min-h-[32px] cursor-pointer"
         >
