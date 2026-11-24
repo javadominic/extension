@@ -13,6 +13,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         popup: 'src/popup/index.html',
+        onboarding: 'src/onboarding/index.html',
       },
     },
   },

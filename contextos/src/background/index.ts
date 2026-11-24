@@ -175,8 +175,14 @@ chrome.bookmarks.onRemoved.addListener(async (id) => {
   }
 })
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async (details) => {
   chrome.alarms.create('healthCheck', { periodInMinutes: 10080 }) // 1 week
+  if (details.reason === 'install') {
+    const res = await chrome.storage.local.get('hasCompletedTour')
+    if (!res.hasCompletedTour) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/index.html') })
+    }
+  }
 })
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {

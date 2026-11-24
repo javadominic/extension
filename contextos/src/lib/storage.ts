@@ -107,3 +107,12 @@ export async function getAndClearPendingEdit(): Promise<string | null> {
   }
   return null
 }
+
+export async function hasCompletedTour(): Promise<boolean> {
+  const res = await chrome.storage.local.get('hasCompletedTour')
+  return Boolean(res.hasCompletedTour)
+}
+
+export async function setCompletedTour(completed = true): Promise<void> {
+  await chrome.storage.local.set({ hasCompletedTour: completed })
+}

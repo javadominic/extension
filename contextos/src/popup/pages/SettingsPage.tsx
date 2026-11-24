@@ -486,6 +486,23 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* ── 6. Tour Guide ───────────────────────────────────────────── */}
+      <section className="surface-card p-3.5 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-text">Tour guide</h2>
+          <p className="text-xs text-text-muted">Replay the interactive onboarding walkthrough</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            chrome.tabs.create({ url: chrome.runtime.getURL('src/onboarding/index.html') })
+          }}
+          className="btn-secondary text-xs py-1.5 px-3 min-h-[32px] cursor-pointer"
+        >
+          Replay guide
+        </button>
+      </section>
+
       <p className="text-center text-xs text-text-muted pb-1">
         Contextos v1.1.0
       </p>
