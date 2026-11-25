@@ -43,8 +43,9 @@ It works quietly inside your browser to surface your past saves at the exact mom
 - **Local-Only Mode** — Contextos can be used completely offline with zero accounts or cloud dependencies.
 
 ### Interactive Spotlight Onboarding
+- **Automatic First-Run Launch** — Triggers automatically on its own the very first time a user opens the extension popup. No need to visit Settings first.
 - **Live UI Spotlight Tour** — Interactive 7-step guide featuring an illuminated spotlight cutout and directional arrow pointers over real buttons, tabs, and inputs.
-- **Non-Intrusive & Replayable** — Escapes cleanly via <kbd>Esc</kbd> or Skip, and can be replayed anytime from **Settings → Replay guide**.
+- **Non-Intrusive & Replayable** — Escapes cleanly via <kbd>Esc</kbd> or Skip, saves `hasCompletedTour: true` so it never interrupts again, and can be replayed anytime from **Settings → Replay guide**.
 
 ---
 
