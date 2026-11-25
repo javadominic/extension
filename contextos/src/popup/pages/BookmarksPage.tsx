@@ -319,6 +319,7 @@ export default function BookmarksPage() {
           <span className="text-xs text-text-muted font-medium">{bookmarks.length} saves</span>
           <div className="flex items-center gap-1.5">
             <button
+              id="btn-save-current"
               onClick={handleSaveCurrentPage}
               className="btn-primary text-xs py-1 px-2.5 min-h-[30px]"
             >
@@ -450,18 +451,24 @@ export default function BookmarksPage() {
           </select>
         </div>
 
-        {allTags.length > 0 && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
-            {allTags.map(tag => (
+        <div id="tags-filter-bar" className="flex gap-1.5 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+          {allTags.length > 0 ? (
+            allTags.map(tag => (
               <TagBadge
                 key={tag}
                 tag={tag}
                 active={activeTag === tag}
                 onClick={() => setActiveTag(prev => prev === tag ? null : tag)}
               />
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <>
+              <TagBadge tag="research" active={false} onClick={() => {}} />
+              <TagBadge tag="frontend" active={false} onClick={() => {}} />
+              <TagBadge tag="docs" active={false} onClick={() => {}} />
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-2.5 space-y-2.5">

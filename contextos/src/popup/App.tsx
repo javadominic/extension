@@ -4,16 +4,16 @@ import BookmarksPage from './pages/BookmarksPage'
 import GraphPage     from './pages/GraphPage'
 import TeamsPage     from './pages/TeamsPage'
 import SettingsPage  from './pages/SettingsPage'
-import OnboardingApp from '../onboarding/OnboardingApp'
+import SpotlightTour from '../components/SpotlightTour'
 import { getSettings, hasCompletedTour } from '../lib/storage'
 import type { TeamData } from '../types'
 import {
   IconSearch,
   IconBookmark,
-  IconNetwork,
-  IconUsers,
-  IconSettings,
 } from '../components/LucideIcons'
+import graphIcon    from '/icons/tab-graph.png'
+import teamsIcon    from '/icons/tab-teams.png'
+import settingsIcon from '/icons/tab-settings.png'
 import contextosLogo from '/icons/icon128.png'
 
 type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
@@ -21,15 +21,16 @@ type Tab = 'search' | 'bookmarks' | 'graph' | 'teams' | 'settings'
 interface TabItem {
   id: Tab
   label: string
-  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+  Icon?: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>
+  image?: string
 }
 
 const TABS: TabItem[] = [
   { id: 'search',    label: 'Search',   Icon: IconSearch },
   { id: 'bookmarks', label: 'Saves',    Icon: IconBookmark },
-  { id: 'graph',     label: 'Graph',    Icon: IconNetwork },
-  { id: 'teams',     label: 'Teams',    Icon: IconUsers },
-  { id: 'settings',  label: 'Settings', Icon: IconSettings },
+  { id: 'graph',     label: 'Graph',    image: graphIcon },
+  { id: 'teams',     label: 'Teams',    image: teamsIcon },
+  { id: 'settings',  label: 'Settings', image: settingsIcon },
 ]
 
 export default function App() {
@@ -110,9 +111,12 @@ export default function App() {
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-bg text-text">
-      {/* ── Tour Guide Overlay (shown on first install, full-bleed inside popup) */}
+      {/* ── Tour Guide Overlay (Interactive spotlight pointing directly to live UI) */}
       {showTour && (
-        <OnboardingApp onComplete={() => setShowTour(false)} />
+        <SpotlightTour
+          onSwitchTab={(tab) => setActiveTab(tab)}
+          onComplete={() => setShowTour(false)}
+        />
       )}
       {/* ── Header (Custom Contextos Logo Tile, Wordmark, AI Ready) ── */}
       <header className="sticky top-0 z-40 flex items-center gap-2.5 px-4 py-2.5 border-b border-border bg-surface select-none">
@@ -168,11 +172,21 @@ export default function App() {
               )}
 
               <div className="relative flex items-center justify-center w-5 h-5">
-                <TabIcon
-                  size={18}
-                  strokeWidth={1.5}
-                  className={isActive ? 'text-amber' : 'text-text-secondary'}
-                />
+                {tab.image ? (
+                  <img
+                    src={tab.image}
+                    alt={tab.label}
+                    className={`w-5 h-5 object-contain transition-all duration-normal ${
+                      isActive ? 'scale-105 opacity-100' : 'opacity-65 hover:opacity-90'
+                    }`}
+                  />
+                ) : TabIcon ? (
+                  <TabIcon
+                    size={18}
+                    strokeWidth={1.5}
+                    className={isActive ? 'text-amber' : 'text-text-secondary'}
+                  />
+                ) : null}
                 {tab.id === 'teams' && totalNewShared > 0 && (
                   <span className="absolute -top-1 -right-2 bg-dead text-white text-[10px] font-medium px-1 rounded-full min-w-[15px] text-center leading-tight">
                     {totalNewShared > 9 ? '9+' : totalNewShared}

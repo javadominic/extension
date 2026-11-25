@@ -160,7 +160,7 @@ export default function SettingsPage() {
       )}
 
       {/* ── 1. Account ──────────────────────────────────────────────── */}
-      <section className="surface-card p-3.5 space-y-2.5">
+      <section id="settings-account-section" className="surface-card p-3.5 space-y-2.5">
         <h2 className="text-sm font-medium text-text">Account</h2>
         {settings.firebaseUid ? (
           <div className="flex items-center gap-2.5">
@@ -408,7 +408,7 @@ export default function SettingsPage() {
       </section>
 
       {/* ── 4. AI Key (Gemini) ──────────────────────────────────────── */}
-      <section className="surface-card p-3.5 space-y-2.5">
+      <section id="settings-ai-section" className="surface-card p-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium text-text">API key</h2>
           <a
