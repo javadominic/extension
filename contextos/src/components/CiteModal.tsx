@@ -4,6 +4,7 @@ import {
   CITATION_STYLES,
   formatCitation,
   formatBibliography,
+  formatInTextCitation,
   buildTextFragmentUrl,
   type CitationStyle,
 } from '../lib/citations'
@@ -29,6 +30,7 @@ export default function CiteModal({ bookmarks, title, onSaveMeta, onClose }: Pro
 
   const [style, setStyle] = useState<CitationStyle>('apa')
   const [copied, setCopied] = useState(false)
+  const [copiedInText, setCopiedInText] = useState(false)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -76,10 +78,23 @@ export default function CiteModal({ bookmarks, title, onSaveMeta, onClose }: Pro
     return formatBibliography(bookmarks, style)
   }, [previewBookmark, bookmarks, style])
 
+  // In-text citation — only meaningful for single bookmark
+  const inTextCitation = useMemo(() => {
+    if (!previewBookmark) return null
+    return formatInTextCitation(previewBookmark, style)
+  }, [previewBookmark, style])
+
   function handleCopy() {
     navigator.clipboard.writeText(formattedText)
     setCopied(true)
     setTimeout(() => setCopied(false), 1600)
+  }
+
+  function handleCopyInText() {
+    if (!inTextCitation) return
+    navigator.clipboard.writeText(inTextCitation)
+    setCopiedInText(true)
+    setTimeout(() => setCopiedInText(false), 1600)
   }
 
   async function handleSaveMeta() {
@@ -148,7 +163,7 @@ export default function CiteModal({ bookmarks, title, onSaveMeta, onClose }: Pro
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-text-muted font-medium">
-                {style === 'bibtex' ? 'BibTeX entry (Overleaf / LaTeX)' : 'Formatted reference'}
+                {style === 'bibtex' ? 'BibTeX entry (Overleaf / LaTeX)' : 'Full reference'}
               </span>
               {isSingle && onSaveMeta && (
                 <button
@@ -166,6 +181,45 @@ export default function CiteModal({ bookmarks, title, onSaveMeta, onClose }: Pro
               {formattedText}
             </pre>
           </div>
+
+          {/* In-text citation (single bookmark only) */}
+          {isSingle && inTextCitation && !editing && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-text-muted font-medium">
+                  {style === 'chicago'
+                    ? 'Footnote (place at page bottom)'
+                    : style === 'ieee'
+                    ? 'In-text marker'
+                    : style === 'bibtex'
+                    ? 'LaTeX cite command'
+                    : 'In-text citation (paste in paragraph)'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyInText}
+                  className="inline-flex items-center gap-1 text-[11px] text-amber-text hover:underline cursor-pointer"
+                >
+                  {copiedInText ? <IconCheck size={11} /> : <IconCopy size={11} />}
+                  <span>{copiedInText ? 'Copied!' : 'Copy'}</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-2 px-2.5 py-2 rounded-btn bg-amber-soft/20 border border-amber/20">
+                <span className="text-[13px] font-mono text-amber-text select-all flex-1">
+                  {inTextCitation}
+                </span>
+              </div>
+              <p className="text-[10px] text-text-muted leading-relaxed">
+                {style === 'apa' || style === 'mla'
+                  ? 'Place this inside your sentence where you quote or paraphrase, e.g. …found that X was true (Smith, 2024).'
+                  : style === 'chicago'
+                  ? 'Add a superscript number ¹ at the end of your sentence, then paste this at the bottom of the page.'
+                  : style === 'ieee'
+                  ? 'Replace [n] with the sequential number from your reference list.'
+                  : 'Use \\cite{key} in your LaTeX source file.'}
+              </p>
+            </div>
+          )}
 
           {/* Saved Quote + Text-Fragment Deep Link */}
           {isSingle && quote.trim() && !editing && (

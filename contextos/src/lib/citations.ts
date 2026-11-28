@@ -210,6 +210,65 @@ export function formatCitation(bm: BrainBookmark, style: CitationStyle): string 
   return lines.join('\n')
 }
 
+/**
+ * Returns the SHORT in-text citation marker to place inside a paragraph.
+ *
+ * APA 7   →  (Smith & Jones, 2024)  or  (MDN Web Docs, n.d.)
+ * MLA 9   →  (Smith 45)             or  (Smith)
+ * Chicago →  footnote stub ¹ Author, "Title," Year.
+ * IEEE    →  [n]  (number placeholder – user fills n when inserting)
+ * BibTeX  →  \cite{citeKey}
+ */
+export function formatInTextCitation(bm: BrainBookmark, style: CitationStyle, refNumber = 1): string {
+  const meta = bm.citationMeta
+  const authors = meta?.authors?.filter(Boolean) ?? []
+  const year = extractYear(meta?.publishedDate)
+  const title = (bm.title || 'Untitled').trim().replace(/\.$/, '')
+  const venue = meta?.siteName || meta?.journal || getDomain(bm.url)
+
+  if (style === 'apa') {
+    if (authors.length === 0) {
+      const src = venue || `"${title.slice(0, 40)}${title.length > 40 ? '…' : ''}"`
+      return `(${src}, ${year})`
+    }
+    const { last: last1 } = splitAuthorName(authors[0])
+    if (authors.length === 1) return `(${last1}, ${year})`
+    if (authors.length === 2) {
+      const { last: last2 } = splitAuthorName(authors[1])
+      return `(${last1} & ${last2}, ${year})`
+    }
+    return `(${last1} et al., ${year})`
+  }
+
+  if (style === 'mla') {
+    const { last } = splitAuthorName(authors[0] ?? '')
+    const page = meta?.pages?.split(/[-–]/)[0]?.trim() ?? ''
+    if (!last) return `("${title.slice(0, 30)}${title.length > 30 ? '…' : ''}"${page ? ` ${page}` : ''})`
+    return `(${last}${page ? ` ${page}` : ''})`
+  }
+
+  if (style === 'chicago') {
+    // Chicago uses footnotes — produce a short-form footnote stub
+    const { last } = splitAuthorName(authors[0] ?? '')
+    const src = last || venue || title.slice(0, 30)
+    const shortTitle = `"${title.slice(0, 35)}${title.length > 35 ? '…' : ''}"`
+    return `${refNumber}. ${src ? `${src}, ` : ''}${shortTitle}, ${year}.`
+  }
+
+  if (style === 'ieee') {
+    return `[${refNumber}]`
+  }
+
+  // BibTeX — produce the \cite{key}
+  const leadLast = authors.length > 0
+    ? splitAuthorName(authors[0]).last.toLowerCase().replace(/[^a-z0-9]/g, '')
+    : (getDomain(bm.url).split('.')[0] || 'ref').replace(/[^a-z0-9]/g, '')
+  const yearKey = year === 'n.d.' ? 'nd' : year
+  const firstWord = title.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).find(w => w.length > 2) || 'work'
+  const citeKey = `${leadLast || 'ref'}${yearKey}${firstWord}`
+  return `\\cite{${citeKey}}`
+}
+
 export function formatBibliography(bookmarks: BrainBookmark[], style: CitationStyle): string {
   if (style === 'bibtex') {
     return bookmarks.map(bm => formatCitation(bm, 'bibtex')).join('\n\n')
