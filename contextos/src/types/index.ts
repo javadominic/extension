@@ -11,6 +11,7 @@ export interface BrainBookmark {
   sharedWith?: string[]
   uid: string
   embedding?: number[]
+  localEmbedding?: number[]
   parentId?: string | null
   domainKey?: string
 }
@@ -83,6 +84,8 @@ export interface AppSettings {
   lastSeenSharedCount?: Record<string, number>
   searchSuggest?: SearchSuggestSettings
   allowCrossSiteChains?: boolean
+  localModelEnabled?: boolean
+  localModelDownloaded?: boolean
 }
 
 export interface MatchResult {
@@ -127,6 +130,12 @@ export type MessageType =
   | 'RECHECK_BOOKMARKS'
   | 'UNLINK_BOOKMARK'
   | 'LINK_BOOKMARK'
+  | 'LOCAL_AI_DOWNLOAD'
+  | 'LOCAL_AI_STATUS'
+  | 'LOCAL_AI_EMBED'
+  | 'LOCAL_AI_REINDEX'
+  | 'LOCAL_AI_PROGRESS'
+  | 'LOCAL_AI_CLEAR'
 
 export interface ChromeMessage {
   type: MessageType

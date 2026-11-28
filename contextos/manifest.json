@@ -63,8 +63,12 @@
     "storage",
     "tabs",
     "alarms",
-    "identity"
+    "identity",
+    "offscreen"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
   "oauth2": {
     "client_id": "367359110826-3vd2pbhb9703s5m70mbhg6uln5rklfa2.apps.googleusercontent.com",
     "scopes": [

@@ -22,6 +22,86 @@ import { db, auth } from '../lib/firebase'
 
 const skipGeminiForUrls = new Set<string>()
 
+const OFFSCREEN_URL = 'src/offscreen/offscreen.html'
+let creatingOffscreen: Promise<void> | null = null
+
+async function ensureOffscreenDocument(): Promise<boolean> {
+  if (typeof chrome.offscreen === 'undefined') return false
+  const offscreenUrl = chrome.runtime.getURL(OFFSCREEN_URL)
+  const contexts = await (chrome.runtime as any).getContexts?.({
+    contextTypes: ['OFFSCREEN_DOCUMENT'],
+    documentUrls: [offscreenUrl],
+  }).catch(() => [])
+  if (contexts && contexts.length > 0) return true
+
+  if (creatingOffscreen) {
+    await creatingOffscreen
+    return true
+  }
+
+  creatingOffscreen = chrome.offscreen.createDocument({
+    url: OFFSCREEN_URL,
+    reasons: [chrome.offscreen.Reason.WORKERS],
+    justification: 'Run local Transformers.js semantic embeddings offline',
+  })
+  try {
+    await creatingOffscreen
+    return true
+  } finally {
+    creatingOffscreen = null
+  }
+}
+
+async function getLocalEmbeddings(texts: string[]): Promise<number[][] | null> {
+  try {
+    const ok = await ensureOffscreenDocument()
+    if (!ok) return null
+    const res = await chrome.runtime.sendMessage({
+      target: 'offscreen',
+      type: 'OFFSCREEN_EMBED',
+      payload: { texts },
+    })
+    return res?.success ? (res.vectors as number[][]) : null
+  } catch {
+    return null
+  }
+}
+
+async function reindexLocalBookmarks() {
+  const all = await getCachedBookmarks()
+  const missing = all.filter(b => !b.localEmbedding || b.localEmbedding.length === 0)
+  const total = missing.length
+  if (total === 0) {
+    chrome.runtime.sendMessage({
+      type: 'LOCAL_AI_PROGRESS',
+      payload: { status: 'indexed', current: 0, total: 0 },
+    }).catch(() => {})
+    return { indexed: 0, total: 0 }
+  }
+
+  const batchSize = 5
+  let done = 0
+  for (let i = 0; i < missing.length; i += batchSize) {
+    const batch = missing.slice(i, i + batchSize)
+    const texts = batch.map(b => `${b.title}. ${b.note || ''}. ${b.tags.join(' ')}`.trim())
+    const vectors = await getLocalEmbeddings(texts)
+    if (vectors) {
+      for (let j = 0; j < batch.length; j++) {
+        if (vectors[j] && vectors[j].length > 0) {
+          batch[j].localEmbedding = vectors[j]
+          await upsertBookmark(batch[j])
+        }
+      }
+    }
+    done += batch.length
+    chrome.runtime.sendMessage({
+      type: 'LOCAL_AI_PROGRESS',
+      payload: { status: 'indexing', current: done, total },
+    }).catch(() => {})
+  }
+  return { indexed: done, total }
+}
+
 async function signInWithGoogle(): Promise<{uid?: string, error?: string}> {
   return new Promise((resolve) => {
     const manifest = chrome.runtime.getManifest()
@@ -267,6 +347,15 @@ async function processAiQueue() {
 
 chrome.runtime.onMessage.addListener(
   (message: ChromeMessage, _sender, sendResponse: (r: ChromeResponse) => void) => {
+    // Do not intercept messages targeted at the offscreen worker or one-way progress broadcasts
+    if (
+      (message as any)?.target === 'offscreen' ||
+      message?.type === 'LOCAL_AI_PROGRESS' ||
+      message?.type === 'AI_SYNC_PROGRESS' ||
+      message?.type === 'AI_SYNC_RATE_LIMITED'
+    ) {
+      return false
+    }
     ;(async () => {
       try {
         switch (message.type) {
@@ -696,8 +785,55 @@ chrome.runtime.onMessage.addListener(
             const bookmarks = await getCachedBookmarks()
             const s = await getSettings()
             const threshold = s.searchSuggest?.threshold ?? 2.5
-            const results = findRelatedBookmarks(query, bookmarks, threshold)
+            let queryEmbedding: number[] | undefined
+            if (s.localModelEnabled && s.localModelDownloaded) {
+              const vecs = await getLocalEmbeddings([query])
+              if (vecs?.[0]?.length) queryEmbedding = vecs[0]
+            }
+            const results = findRelatedBookmarks(query, bookmarks, threshold, queryEmbedding)
             sendResponse({ success: true, data: results })
+            break
+          }
+
+          case 'LOCAL_AI_DOWNLOAD': {
+            const ok = await ensureOffscreenDocument()
+            if (!ok) {
+              sendResponse({ success: false, error: 'Offscreen API unavailable in this browser.' })
+              break
+            }
+            const res = await chrome.runtime.sendMessage({
+              target: 'offscreen',
+              type: 'OFFSCREEN_LOAD_MODEL',
+            })
+            if (res?.success) {
+              await saveSettings({ localModelDownloaded: true, localModelEnabled: true })
+              const indexStats = await reindexLocalBookmarks()
+              sendResponse({ success: true, data: indexStats })
+            } else {
+              sendResponse({ success: false, error: res?.error || 'Failed to download model.' })
+            }
+            break
+          }
+
+          case 'LOCAL_AI_REINDEX': {
+            const stats = await reindexLocalBookmarks()
+            sendResponse({ success: true, data: stats })
+            break
+          }
+
+          case 'LOCAL_AI_EMBED': {
+            const { text } = message.payload as { text: string }
+            const vecs = await getLocalEmbeddings([text])
+            sendResponse({ success: !!vecs?.[0]?.length, data: vecs?.[0] ?? null })
+            break
+          }
+
+          case 'LOCAL_AI_CLEAR': {
+            try {
+              await (chrome.offscreen as any)?.closeDocument?.()
+            } catch {}
+            await saveSettings({ localModelEnabled: false, localModelDownloaded: false })
+            sendResponse({ success: true })
             break
           }
 

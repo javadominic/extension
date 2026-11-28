@@ -57,8 +57,25 @@ export default function SettingsPage() {
   const [keyError,     setKeyError]     = useState('')
   const [copiedUid,    setCopiedUid]    = useState(false)
   const [showAdvancedEngines, setShowAdvancedEngines] = useState(false)
+  const [localAiBusy,  setLocalAiBusy]  = useState(false)
+  const [localAiProgress, setLocalAiProgress] = useState<{ label: string; pct: number } | null>(null)
 
-  useEffect(() => { getSettings().then(setSettings) }, [])
+  useEffect(() => {
+    getSettings().then(setSettings)
+    function onMsg(msg: any) {
+      if (msg?.type === 'LOCAL_AI_PROGRESS') {
+        const p = msg.payload ?? {}
+        if (p.status === 'progress') {
+          setLocalAiProgress({ label: `Downloading model… ${p.progress ?? 0}%`, pct: p.progress ?? 0 })
+        } else if (p.status === 'indexing' && p.total > 0) {
+          const pct = Math.round((p.current / p.total) * 100)
+          setLocalAiProgress({ label: `Indexing saves (${p.current}/${p.total})…`, pct })
+        }
+      }
+    }
+    chrome.runtime.onMessage.addListener(onMsg)
+    return () => chrome.runtime.onMessage.removeListener(onMsg)
+  }, [])
 
   const suggest = settings.searchSuggest ?? DEFAULT_SUGGEST
 
@@ -462,6 +479,109 @@ export default function SettingsPage() {
         )}
         {keyStatus === 'invalid' && keyError && (
           <p className="text-xs text-dead leading-snug">{keyError}</p>
+        )}
+      </section>
+
+      {/* ── 4b. Offline Semantic AI (Transformers.js) ──────────────── */}
+      <section className="surface-card p-3.5 space-y-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-medium text-text">Offline semantic AI</h2>
+            <p className="text-xs text-text-muted mt-0.5">
+              Runs locally (~22 MB download) for synonym matching with zero API limits.
+            </p>
+          </div>
+          {settings.localModelDownloaded && (
+            <Toggle
+              id="local-ai-toggle"
+              checked={!!settings.localModelEnabled}
+              onChange={v => save({ localModelEnabled: v })}
+            />
+          )}
+        </div>
+
+        {localAiProgress && (
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-xs text-text-secondary">
+              <span>{localAiProgress.label}</span>
+              <span className="font-mono text-amber-text">{localAiProgress.pct}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-surface-raised rounded-full overflow-hidden">
+              <div
+                className="h-full bg-amber transition-all duration-150"
+                style={{ width: `${localAiProgress.pct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {!settings.localModelDownloaded ? (
+          <button
+            id="download-local-ai-btn"
+            type="button"
+            disabled={localAiBusy}
+            onClick={async () => {
+              setLocalAiBusy(true)
+              setLocalAiProgress({ label: 'Initializing model…', pct: 5 })
+              try {
+                const res = await chrome.runtime.sendMessage({ type: 'LOCAL_AI_DOWNLOAD' })
+                if (res?.success) {
+                  await save({ localModelDownloaded: true, localModelEnabled: true })
+                  setToast({ msg: 'Offline semantic model ready.', type: 'success' })
+                } else {
+                  setToast({ msg: res?.error || 'Download failed.', type: 'error' })
+                }
+              } catch (e: any) {
+                setToast({ msg: e?.message || 'Download failed.', type: 'error' })
+              } finally {
+                setLocalAiBusy(false)
+                setLocalAiProgress(null)
+              }
+            }}
+            className="btn-secondary w-full text-xs py-1.5 min-h-[34px] cursor-pointer"
+          >
+            {localAiBusy ? 'Downloading…' : 'Download offline AI model (~22 MB)'}
+          </button>
+        ) : (
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
+            <span className="text-xs text-text-secondary">
+              {settings.localModelEnabled ? 'Active · Cached locally' : 'Paused · Cached locally'}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={localAiBusy}
+                onClick={async () => {
+                  setLocalAiBusy(true)
+                  setLocalAiProgress({ label: 'Indexing saves…', pct: 0 })
+                  try {
+                    const res = await chrome.runtime.sendMessage({ type: 'LOCAL_AI_REINDEX' })
+                    if (res?.success) {
+                      setToast({ msg: `Indexed ${res.data?.indexed ?? 0} saves.`, type: 'success' })
+                    }
+                  } finally {
+                    setLocalAiBusy(false)
+                    setLocalAiProgress(null)
+                  }
+                }}
+                className="text-xs text-amber-text hover:underline cursor-pointer"
+              >
+                Re-index saves
+              </button>
+              <button
+                type="button"
+                disabled={localAiBusy}
+                onClick={async () => {
+                  await chrome.runtime.sendMessage({ type: 'LOCAL_AI_CLEAR' })
+                  await save({ localModelEnabled: false, localModelDownloaded: false })
+                  setToast({ msg: 'Offline model disabled.', type: 'success' })
+                }}
+                className="text-xs text-text-muted hover:text-dead cursor-pointer"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         )}
       </section>
 

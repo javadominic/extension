@@ -32,15 +32,24 @@ export default function SearchPage() {
         const settings = await getSettings()
         const threshold = settings.searchSuggest?.threshold ?? 2.5
 
-        // Try to get a query embedding (1 API call) for semantic blending.
-        // Falls back to BM25-only if no key or if the call fails.
+        // Prefer local offline model when enabled (zero API quota), else Gemini query embedding.
         let queryEmbedding: number[] | undefined
-        if (settings.geminiApiKey) {
+        if (settings.localModelEnabled && settings.localModelDownloaded) {
+          try {
+            const res = await chrome.runtime.sendMessage({
+              type: 'LOCAL_AI_EMBED',
+              payload: { text: q },
+            })
+            if (res?.success && Array.isArray(res.data)) {
+              queryEmbedding = res.data as number[]
+            }
+          } catch {}
+        } else if (settings.geminiApiKey) {
           const emb = await getQueryEmbedding(q, settings.geminiApiKey)
           if (emb) queryEmbedding = emb
         }
 
-        // Local BM25 + optional cosine similarity — no more sending all bookmarks to Gemini
+        // Local BM25F + optional cosine similarity — no more sending all bookmarks to Gemini
         const matchResults = findRelatedBookmarks(q, all, threshold, queryEmbedding)
         setResults(matchResults.map(r => r.bookmark))
       } finally {
