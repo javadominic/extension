@@ -5,10 +5,11 @@ import TagBadge     from '../../components/TagBadge'
 import Toast        from '../../components/Toast'
 import SiteChainCard from '../../components/SiteChainCard'
 import AddToChainModal from '../../components/AddToChainModal'
-import { getCachedBookmarks, getSettings } from '../../lib/storage'
+import CiteModal    from '../../components/CiteModal'
+import { getCachedBookmarks, getSettings, upsertBookmark } from '../../lib/storage'
 import { syncChromeBookmarks, updateNote, deleteBookmark } from '../../lib/bookmarks'
 import { groupBookmarksBySite, unlinkBookmark, type SiteGroup } from '../../lib/chains'
-import type { BrainBookmark } from '../../types'
+import type { BrainBookmark, CitationMetadata } from '../../types'
 import {
   IconLink2,
   IconList,
@@ -70,6 +71,7 @@ export default function BookmarksPage() {
   const [undoState,    setUndoState]    = useState<UndoState | null>(null)
   const [groupBySite,  setGroupBySite]  = useState(false)
   const [chainModalGroup, setChainModalGroup] = useState<SiteGroup | null>(null)
+  const [citing,       setCiting]       = useState<{ bookmarks: BrainBookmark[]; title?: string } | null>(null)
 
   useEffect(() => {
     import('../../lib/storage').then(({ getCachedBookmarks }) => {
@@ -216,13 +218,23 @@ export default function BookmarksPage() {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
     const activeTab = tabs[0]
     if (!activeTab?.url || !activeTab.title) return
+
+    let pageData: { citationMeta?: CitationMetadata; quote?: string } = {}
+    try {
+      const res = await chrome.runtime.sendMessage({ type: 'GET_PAGE_DATA' })
+      if (res?.success && res.data) pageData = res.data
+    } catch {}
+
     chrome.bookmarks.create({ title: activeTab.title, url: activeTab.url }, async node => {
       const settings = await getSettings()
       const newBm: BrainBookmark = {
         id: node.id, url: node.url!, title: node.title,
         note: '', tags: [], addedAt: node.dateAdded ?? Date.now(),
         health: 'unchecked', source: 'chrome', uid: settings.firebaseUid ?? '',
+        citationMeta: pageData.citationMeta,
+        quote: pageData.quote,
       }
+      await upsertBookmark(newBm)
       setBookmarks(prev => [newBm, ...prev])
       setEditing(newBm)
     })
@@ -502,6 +514,7 @@ export default function BookmarksPage() {
               onAddToChain={() => setChainModalGroup(group)}
               onUnlink={handleUnlink}
               onShowInGraph={handleShowInGraph}
+              onCiteGroup={g => setCiting({ bookmarks: g.bookmarks, title: `${g.domainKey} bibliography` })}
               onEdit={setEditing}
               onDelete={handleDelete}
             />
@@ -512,6 +525,7 @@ export default function BookmarksPage() {
               key={bm.id}
               bookmark={bm}
               onEdit={setEditing}
+              onCite={b => setCiting({ bookmarks: [b] })}
               onDelete={handleDelete}
               selected={selectedIds.has(bm.id)}
               onSelect={handleSelect}
@@ -540,6 +554,23 @@ export default function BookmarksPage() {
           bookmark={editing}
           onSave={handleSaveNote}
           onSkip={() => setEditing(null)}
+        />
+      )}
+
+      {citing && (
+        <CiteModal
+          bookmarks={citing.bookmarks}
+          title={citing.title}
+          onClose={() => setCiting(null)}
+          onSaveMeta={async (id, citationMeta, quote) => {
+            const target = bookmarks.find(b => b.id === id)
+            if (!target) return
+            const updated: BrainBookmark = { ...target, citationMeta, quote }
+            await upsertBookmark(updated)
+            setBookmarks(prev => prev.map(b => b.id === id ? updated : b))
+            setCiting({ bookmarks: [updated], title: citing.title })
+            setToast({ msg: 'Citation details saved', type: 'success' })
+          }}
         />
       )}
     </div>

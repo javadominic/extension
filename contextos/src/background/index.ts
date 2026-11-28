@@ -3,7 +3,7 @@ import { getFirestore, doc, setDoc, deleteDoc, getDoc, getDocs, collection, addD
 import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth'
 import { suggestNoteAndTags } from '../lib/gemini'
 import { findRelatedBookmarks } from '../lib/search'
-import { getActiveTabText } from '../lib/pageText'
+import { getActiveTabPageData } from '../lib/pageText'
 import {
   getSettings,
   getCachedBookmarks,
@@ -214,12 +214,15 @@ chrome.bookmarks.onCreated.addListener(async (id, node) => {
     if (parentId) bm.parentId = parentId
   } catch {}
 
+  const pageData = await getActiveTabPageData()
+  if (pageData.citationMeta) bm.citationMeta = pageData.citationMeta
+  if (pageData.quote) bm.quote = pageData.quote
+
   await upsertBookmark(bm)
 
   if (settings.geminiApiKey) {
-    const pageText = await getActiveTabText()
     try {
-      const { note, tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageText)
+      const { note, tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageData.text)
       bm.note = note
       bm.tags = tags
     } catch {
@@ -438,8 +441,14 @@ chrome.runtime.onMessage.addListener(
           }
 
           case 'GET_PAGE_TEXT': {
-            const text = await getActiveTabText()
-            sendResponse({ success: true, data: text })
+            const pageData = await getActiveTabPageData()
+            sendResponse({ success: true, data: pageData.text })
+            break
+          }
+
+          case 'GET_PAGE_DATA': {
+            const pageData = await getActiveTabPageData()
+            sendResponse({ success: true, data: pageData })
             break
           }
 
@@ -657,11 +666,14 @@ chrome.runtime.onMessage.addListener(
                 if (parentId) bm.parentId = parentId
               } catch {}
               
+              const pageData = await getActiveTabPageData()
+              if (pageData.citationMeta) bm.citationMeta = pageData.citationMeta
+              if (pageData.quote) bm.quote = pageData.quote
+
               await upsertBookmark(bm)
               if (settings.geminiApiKey) {
-                const pageText = await getActiveTabText()
                 try {
-                  const { tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageText)
+                  const { tags } = await suggestNoteAndTags(bm.url, bm.title, settings.geminiApiKey, pageData.text)
                   bm.tags = tags
                 } catch { /* ignore */ }
                 await upsertBookmark(bm)
@@ -686,7 +698,7 @@ chrome.runtime.onMessage.addListener(
               sendResponse({ success: false, error: 'NO_KEY' })
               break
             }
-            const pageText = await getActiveTabText()
+            const { text: pageText } = await getActiveTabPageData()
             try {
               const { note, tags } = await suggestNoteAndTags(snUrl, snTitle, settings.geminiApiKey, pageText)
               if (!note) {

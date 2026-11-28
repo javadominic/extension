@@ -1,3 +1,15 @@
+export interface CitationMetadata {
+  authors: string[]
+  publishedDate?: string
+  siteName?: string
+  journal?: string
+  doi?: string
+  arxivId?: string
+  volume?: string
+  issue?: string
+  pages?: string
+}
+
 export interface BrainBookmark {
   id: string
   url: string
@@ -14,6 +26,8 @@ export interface BrainBookmark {
   localEmbedding?: number[]
   parentId?: string | null
   domainKey?: string
+  citationMeta?: CitationMetadata
+  quote?: string
 }
 
 export interface GraphNode {
@@ -102,6 +116,7 @@ export type MessageType =
   | 'CHECK_HEALTH'
   | 'GET_SETTINGS'
   | 'GET_PAGE_TEXT'
+  | 'GET_PAGE_DATA'
   | 'ADD_BOOKMARK'
   | 'DELETE_BOOKMARK'
   | 'SYNC_BOOKMARKS'

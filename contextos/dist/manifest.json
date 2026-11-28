@@ -27,7 +27,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-D3VB5MNd.js"
+        "assets/index.ts-Bo65B60n.js"
       ],
       "matches": [
         "<all_urls>"
@@ -94,7 +94,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "assets/index.ts-D3VB5MNd.js"
+        "assets/index.ts-Bo65B60n.js"
       ],
       "use_dynamic_url": false
     },

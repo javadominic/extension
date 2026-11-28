@@ -540,12 +540,116 @@ function init() {
   })
 }
 
+function extractCitationMetadata() {
+  const getMeta = (names: string[]): string | undefined => {
+    for (const name of names) {
+      const el =
+        document.querySelector(`meta[name="${name}"]`) ||
+        document.querySelector(`meta[property="${name}"]`)
+      const val = el?.getAttribute('content')?.trim()
+      if (val) return val
+    }
+    return undefined
+  }
+
+  const getAllMeta = (name: string): string[] => {
+    const els = document.querySelectorAll(`meta[name="${name}"], meta[property="${name}"]`)
+    return Array.from(els)
+      .map(el => el.getAttribute('content')?.trim() ?? '')
+      .filter(Boolean)
+  }
+
+  // 1. Authors (Scholar tags -> standard author meta -> JSON-LD)
+  let authors = getAllMeta('citation_author')
+  if (authors.length === 0) {
+    const singleAuthor = getMeta(['author', 'dc.creator', 'DC.creator', 'article:author'])
+    if (singleAuthor && !singleAuthor.startsWith('http')) {
+      authors = singleAuthor.split(/\s*,\s*(?=[A-Z])|\s*;\s*|\s+and\s+/i).map(s => s.trim()).filter(Boolean)
+    }
+  }
+  if (authors.length === 0) {
+    try {
+      const ldScripts = document.querySelectorAll('script[type="application/ld+json"]')
+      for (const script of Array.from(ldScripts)) {
+        const parsed = JSON.parse(script.textContent || '{}')
+        const items = Array.isArray(parsed) ? parsed : [parsed]
+        for (const item of items) {
+          const ldAuthor = item?.author
+          if (Array.isArray(ldAuthor)) {
+            authors.push(...ldAuthor.map((a: any) => a?.name).filter(Boolean))
+          } else if (typeof ldAuthor === 'string') {
+            authors.push(ldAuthor)
+          } else if (ldAuthor?.name) {
+            authors.push(ldAuthor.name)
+          }
+        }
+        if (authors.length > 0) break
+      }
+    } catch {}
+  }
+
+  // 2. Publication date
+  const publishedDate =
+    getMeta([
+      'citation_publication_date',
+      'citation_date',
+      'citation_online_date',
+      'article:published_time',
+      'dc.date',
+      'DC.date',
+      'pubdate',
+    ]) ||
+    document.querySelector('time[datetime]')?.getAttribute('datetime')?.trim()
+
+  // 3. Journal / Conference / Site name
+  const journal = getMeta(['citation_journal_title', 'citation_conference_title', 'citation_booktitle'])
+  const siteName = getMeta(['og:site_name', 'application-name']) || location.hostname.replace(/^www\./, '')
+
+  // 4. DOI & arXiv ID (meta tags + URL fallback)
+  let doi = getMeta(['citation_doi', 'dc.identifier', 'DC.identifier'])
+  if (doi && !/^10\.\d{4,9}\//.test(doi)) {
+    const match = doi.match(/10\.\d{4,9}\/[-._;()/:A-Za-z0-9]+/)
+    doi = match ? match[0] : undefined
+  }
+  if (!doi) {
+    const urlDoi = location.href.match(/10\.\d{4,9}\/[-._;()/:A-Za-z0-9]+/)
+    if (urlDoi) doi = urlDoi[0]
+  }
+
+  let arxivId = getMeta(['citation_arxiv_id'])
+  if (!arxivId && location.hostname.includes('arxiv.org')) {
+    const m = location.pathname.match(/\/(?:abs|pdf)\/([0-9]{4}\.[0-9]{4,5}(?:v\d+)?)/)
+    if (m) arxivId = m[1]
+  }
+
+  // 5. Volume, issue, pages
+  const volume = getMeta(['citation_volume'])
+  const issue = getMeta(['citation_issue'])
+  const firstPage = getMeta(['citation_firstpage'])
+  const lastPage = getMeta(['citation_lastpage'])
+  const pages = firstPage && lastPage ? `${firstPage}-${lastPage}` : firstPage
+
+  return {
+    authors: Array.from(new Set(authors)).slice(0, 12),
+    publishedDate: publishedDate?.slice(0, 10),
+    siteName,
+    journal,
+    doi,
+    arxivId,
+    volume,
+    issue,
+    pages,
+  }
+}
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg.type === 'SHOW_TOAST' && msg.payload) {
     injectToast(msg.payload as BrainBookmark)
   } else if (msg.type === 'EXTRACT_TEXT') {
     const text = (document.body?.innerText || document.documentElement?.innerText || '').substring(0, 5000)
-    sendResponse({ text })
+    const citationMeta = extractCitationMetadata()
+    const quote = window.getSelection()?.toString()?.trim().slice(0, 600) || ''
+    sendResponse({ text, citationMeta, quote })
   }
 })
 

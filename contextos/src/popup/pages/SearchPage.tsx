@@ -2,13 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import SearchBar    from '../../components/SearchBar'
 import BookmarkCard from '../../components/BookmarkCard'
 import AddNoteModal from '../../components/AddNoteModal'
+import CiteModal    from '../../components/CiteModal'
 import Toast        from '../../components/Toast'
-import { getCachedBookmarks, getSettings } from '../../lib/storage'
+import { getCachedBookmarks, getSettings, upsertBookmark } from '../../lib/storage'
 import { getQueryEmbedding } from '../../lib/gemini'
 import { findRelatedBookmarks } from '../../lib/search'
 import { updateNote, deleteBookmark } from '../../lib/bookmarks'
 import { getChainLength } from '../../lib/chains'
-import type { BrainBookmark } from '../../types'
+import type { BrainBookmark, CitationMetadata } from '../../types'
 import { IconSearch } from '../../components/LucideIcons'
 
 export default function SearchPage() {
@@ -17,6 +18,7 @@ export default function SearchPage() {
   const [all,       setAll]       = useState<BrainBookmark[]>([])
   const [loading,   setLoading]   = useState(false)
   const [editing,   setEditing]   = useState<BrainBookmark | null>(null)
+  const [citing,    setCiting]    = useState<BrainBookmark | null>(null)
   const [toast,     setToast]     = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
@@ -137,6 +139,7 @@ export default function SearchPage() {
             bookmark={bm}
             chainLength={getChainLength(bm.id, all)}
             onEdit={setEditing}
+            onCite={setCiting}
             onDelete={handleDelete}
           />
         ))}
@@ -147,6 +150,23 @@ export default function SearchPage() {
           bookmark={editing}
           onSave={handleSaveNote}
           onSkip={() => setEditing(null)}
+        />
+      )}
+
+      {citing && (
+        <CiteModal
+          bookmarks={[citing]}
+          onClose={() => setCiting(null)}
+          onSaveMeta={async (id: string, citationMeta: CitationMetadata, quote?: string) => {
+            const target = all.find(b => b.id === id)
+            if (!target) return
+            const updated: BrainBookmark = { ...target, citationMeta, quote }
+            await upsertBookmark(updated)
+            setAll(prev => prev.map(b => b.id === id ? updated : b))
+            setResults(prev => prev.map(b => b.id === id ? updated : b))
+            setCiting(updated)
+            setToast({ msg: 'Citation details saved', type: 'success' })
+          }}
         />
       )}
     </div>

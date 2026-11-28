@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { BrainBookmark } from '../types'
+import { buildTextFragmentUrl } from '../lib/citations'
 import TagBadge from './TagBadge'
 import {
   IconLink2,
@@ -9,6 +10,7 @@ import {
   IconEdit,
   IconTrash2,
   IconShare2,
+  IconQuote,
 } from './LucideIcons'
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   onEdit: (bm: BrainBookmark) => void
   onDelete: (id: string) => void
   onShare?: (bm: BrainBookmark) => void
+  onCite?: (bm: BrainBookmark) => void
   showTeamShare?: boolean
   selected?: boolean
   onSelect?: (id: string, checked: boolean) => void
@@ -61,7 +64,7 @@ const HEALTH_LABEL: Record<string, string> = {
 }
 
 export default function BookmarkCard({
-  bookmark, onEdit, onDelete, onShare, showTeamShare,
+  bookmark, onEdit, onDelete, onShare, onCite, showTeamShare,
   selected, onSelect, bulkMode, chainLength,
 }: Props) {
   const [hovered, setHovered] = useState(false)
@@ -83,7 +86,7 @@ export default function BookmarkCard({
   }
 
   function handleOpen() {
-    chrome.tabs.create({ url: bookmark.url })
+    chrome.tabs.create({ url: buildTextFragmentUrl(bookmark.url, bookmark.quote) })
   }
 
   function handleWayback() {
@@ -173,6 +176,15 @@ export default function BookmarkCard({
               <IconCopy size={14} strokeWidth={1.5} />
             )}
           </button>
+          {onCite && (
+            <button
+              onClick={e => { e.stopPropagation(); onCite(bookmark) }}
+              className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
+              title="Cite source (APA, MLA, BibTeX)"
+            >
+              <IconQuote size={14} strokeWidth={1.5} />
+            </button>
+          )}
           <button
             onClick={() => onEdit(bookmark)}
             className="text-text-muted hover:text-amber transition-colors p-1 rounded hover:bg-surface-raised cursor-pointer"
@@ -193,6 +205,12 @@ export default function BookmarkCard({
       {bookmark.note && (
         <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed mb-2 pl-6">
           {bookmark.note}
+        </p>
+      )}
+
+      {bookmark.quote && (
+        <p className="text-[11px] text-text-muted italic border-l-2 border-amber/40 pl-2 ml-6 mb-2 line-clamp-2 leading-relaxed">
+          “{bookmark.quote}”
         </p>
       )}
 

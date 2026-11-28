@@ -7,6 +7,7 @@ import {
   IconExternalLink,
   IconPlus,
   IconChevronDown,
+  IconQuote,
 } from './LucideIcons'
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
   onAddToChain: (group: SiteGroup) => void
   onUnlink: (bookmarkId: string) => void
   onShowInGraph: (group: SiteGroup) => void
+  onCiteGroup?: (group: SiteGroup) => void
   onEdit?: (bm: BrainBookmark) => void
   onDelete?: (id: string) => void
 }
@@ -40,6 +42,7 @@ export default function SiteChainCard({
   onAddToChain,
   onUnlink,
   onShowInGraph,
+  onCiteGroup,
   onEdit,
   onDelete,
 }: Props) {
@@ -140,6 +143,17 @@ export default function SiteChainCard({
               <IconPlus size={12} strokeWidth={2} />
               <span>Add to chain</span>
             </button>
+
+            {onCiteGroup && (
+              <button
+                onClick={e => { e.stopPropagation(); onCiteGroup(group) }}
+                className="btn-secondary text-xs py-1 px-2.5 min-h-[30px]"
+                title="Export bibliography for all pages in this chain"
+              >
+                <IconQuote size={12} strokeWidth={1.5} />
+                <span>Cite all</span>
+              </button>
+            )}
 
             <button
               onClick={e => { e.stopPropagation(); onShowInGraph(group) }}

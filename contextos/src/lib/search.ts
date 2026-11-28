@@ -78,10 +78,13 @@ function extractFields(bm: BrainBookmark): BookmarkFields {
     urlTokens = tokenize(path.replace(/\//g, ' '))
   } catch {}
 
+  const authorTokens = (bm.citationMeta?.authors ?? []).flatMap(a => tokenize(a))
+  const quoteTokens  = tokenize(bm.quote ?? '')
+
   return {
     title: tokenize(bm.title),
-    tags:  bm.tags.flatMap(t => tokenize(t)),
-    note:  tokenize(bm.note ?? ''),
+    tags:  [...bm.tags.flatMap(t => tokenize(t)), ...authorTokens],
+    note:  [...tokenize(bm.note ?? ''), ...quoteTokens],
     url:   urlTokens,
   }
 }
